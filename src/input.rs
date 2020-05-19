@@ -66,35 +66,38 @@ impl Input {
                     self.keys_pressed.insert(key);
                 }
                 self.keys_down.insert(key);
-            },
+            }
             KeyUp(key) => {
                 self.keys_released.insert(key);
                 self.keys_down.remove(&key);
-            },
+            }
             MouseMove(x_delta, y_delta) => {
                 self.mouse_delta = (x_delta, y_delta);
-            },
+            }
             MousePos(x_pos, y_pos) => {
                 self.mouse_pos = (x_pos, y_pos);
-            },
+            }
             MouseButtonPressed(button) => {
                 let index = button as usize;
                 assert!(index < MAX_SUPPORTED_MOUSE_BUTTONS);
 
                 self.mouse_down[index] = false;
                 self.mouse_released[index] = true;
-            },
+            }
             MouseButtonReleased(button) => {
                 let index = button as usize;
                 assert!(index < MAX_SUPPORTED_MOUSE_BUTTONS);
 
                 self.mouse_pressed[index] = true ^ self.mouse_down[index];
                 self.mouse_down[index] = true;
-            },
+            }
             MouseWheel(scroll_amount) => {
                 self.mouse_scroll = scroll_amount;
             }
-            _ => panic!("Unhandled message {:?} passed to Input::push_input()", message) // TODO: Don't panic? Should be unreachable in release.
+            _ => panic!(
+                "Unhandled message {:?} passed to Input::push_input()",
+                message
+            ), // TODO: Don't panic? Should be unreachable in release.
         }
     }
 

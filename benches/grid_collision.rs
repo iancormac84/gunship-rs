@@ -5,17 +5,17 @@ extern crate hash;
 extern crate rand;
 extern crate test;
 
-use gunship::*;
-use gunship::component::collider::grid_collision::{CollisionGrid, GridCell};
-use hash::fnv::FnvHasher;
 use self::test::Bencher;
+use gunship::component::collider::grid_collision::{CollisionGrid, GridCell};
+use gunship::*;
+use hash::fnv::FnvHasher;
 use std::hash::Hash;
 
 macro_rules! random_range {
     ($ty:ty, $min:expr, $max:expr) => {{
         let range = $max - $min;
         rand::random::<$ty>() * range + $min
-    }}
+    }};
 }
 
 #[bench]
@@ -60,7 +60,10 @@ fn collision_bench(bencher: &mut Bencher) {
         let scene = engine.scene_mut();
 
         scene.resource_manager().set_resource_path("examples/");
-        scene.resource_manager().load_model("meshes/cube.dae").unwrap();
+        scene
+            .resource_manager()
+            .load_model("meshes/cube.dae")
+            .unwrap();
 
         let mut transform_manager = scene.get_manager_mut::<TransformManager>();
         let mut collider_manager = scene.get_manager_mut::<ColliderManager>();
@@ -72,11 +75,15 @@ fn collision_bench(bencher: &mut Bencher) {
             transform.set_position(Point::new(
                 rand::random::<f32>() * 10.0 - 5.0,
                 rand::random::<f32>() * 10.0 - 5.0,
-                0.0));
-            collider_manager.assign(entity, Collider::Sphere {
-                offset: Vector3::zero(),
-                radius: 0.5,
-            });
+                0.0,
+            ));
+            collider_manager.assign(
+                entity,
+                Collider::Sphere {
+                    offset: Vector3::zero(),
+                    radius: 0.5,
+                },
+            );
             collider_manager.assign_callback(entity, callback);
         }
     }

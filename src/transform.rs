@@ -2,15 +2,15 @@
 //!
 //! TODO: Document the transform "component", especially how there's no parent/child setup.
 
-use engine::{self, EngineMessage};
-use collections::atomic_array::AtomicArray;
 use cell_extras::atomic_ref_cell::*;
+use collections::atomic_array::AtomicArray;
+use engine::{self, EngineMessage};
+use math::*;
+use polygon::anchor::AnchorId;
 use std::fmt::{self, Debug, Formatter};
 use std::mem;
 use std::ptr;
 use std::sync::Arc;
-use math::*;
-use polygon::anchor::AnchorId;
 
 // HACK: This is a temporary upper bound on the number of nodes in a single row until we can
 // better support dynamically allocating more space for a row.
@@ -27,7 +27,9 @@ impl Transform {
     /// By default transforms start at the origin of the world with a scale of 1 and are oriented
     /// such that their "forward" is along global -z.
     pub fn new() -> Transform {
-        engine::scene_graph(|scene_graph| Transform { inner: scene_graph.create_node() })
+        engine::scene_graph(|scene_graph| Transform {
+            inner: scene_graph.create_node(),
+        })
     }
 
     /// Gets the current position of the transform.
@@ -157,9 +159,7 @@ impl Debug for Transform {
         write!(
             formatter,
             "Transform {{ position: {:?}, orientation: {:?}, scale: {:?} }}",
-            data.position,
-            data.orientation,
-            data.scale,
+            data.position, data.orientation, data.scale,
         )
     }
 }

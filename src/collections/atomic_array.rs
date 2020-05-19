@@ -3,7 +3,7 @@ use std::cell::UnsafeCell;
 use std::ops::{Deref, Index};
 use std::ptr;
 use std::slice::{self, Iter, IterMut};
-use std::sync::atomic::{ AtomicBool, AtomicUsize, Ordering };
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 /// A dynamically allocated, fixed-size array container.
 ///
@@ -41,7 +41,10 @@ impl<T> AtomicArray<T> {
         // Acquire the write lock by attempting to switch the flag from `false` to `true`. If it
         // returns `false` then we've acquired the lock. We use sequentially consistent ordering
         // for now to guarantee correctness at the cost of some performance.
-        while !self.write_lock.compare_and_swap(false, true, Ordering::SeqCst) {}
+        while !self
+            .write_lock
+            .compare_and_swap(false, true, Ordering::SeqCst)
+        {}
 
         // Write the element into the buffer at the new location, making sure we don't drop
         // `element` or the object that previously occupied that slot in the bucket.
@@ -85,21 +88,11 @@ impl<T> AtomicArray<T> {
     }
 
     pub fn as_slice(&self) -> &[T] {
-        unsafe {
-            slice::from_raw_parts(
-                self.buffer().ptr(),
-                self.len.load(Ordering::SeqCst),
-            )
-        }
+        unsafe { slice::from_raw_parts(self.buffer().ptr(), self.len.load(Ordering::SeqCst)) }
     }
 
     pub fn as_slice_mut(&mut self) -> &mut [T] {
-        unsafe {
-            slice::from_raw_parts_mut(
-                self.buffer().ptr(),
-                self.len.load(Ordering::SeqCst),
-            )
-        }
+        unsafe { slice::from_raw_parts_mut(self.buffer().ptr(), self.len.load(Ordering::SeqCst)) }
     }
 
     fn buffer(&self) -> &RawVec<T> {
@@ -120,7 +113,12 @@ impl<T> Index<usize> for AtomicArray<T> {
 
     fn index(&self, index: usize) -> &T {
         let len = self.len.load(Ordering::SeqCst);
-        assert!(index < len, "Index out of bounds, length is {} but index was {}", len, index);
+        assert!(
+            index < len,
+            "Index out of bounds, length is {} but index was {}",
+            len,
+            index
+        );
 
         unsafe { &*(&*self.buffer.get()).ptr().offset(index as isize) }
     }

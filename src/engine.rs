@@ -1,27 +1,27 @@
-use camera::CameraData;
-use mesh_renderer::MeshRendererData;
-use resource::{MaterialId, MeshId};
-use scheduler::{self, WorkId};
-use transform::{TransformInnerHandle, TransformGraph};
 use bootstrap::window::{Message, Window};
+use camera::CameraData;
 use cell_extras::{AtomicInitCell, InitCell};
 use input::{self, Input, ScanCode};
 use light::LightInner;
-use polygon::{GpuMesh, Renderer, RendererBuilder};
+use mesh_renderer::MeshRendererData;
 use polygon::anchor::Anchor;
 use polygon::camera::{Camera as RenderCamera, CameraId};
 use polygon::material::MaterialId as PolygonMaterialId;
 use polygon::mesh_instance::MeshInstance;
+use polygon::{GpuMesh, Renderer, RendererBuilder};
+use resource::{MaterialId, MeshId};
+use scheduler::{self, WorkId};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::mem;
 use std::ptr::{self, Unique};
-use std::sync::{Arc, Barrier};
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::time::{Duration, Instant};
+use std::sync::{Arc, Barrier};
 use std::thread;
+use std::time::{Duration, Instant};
 use stopwatch::{self, stats, PrettyDuration, Stopwatch};
+use transform::{TransformGraph, TransformInnerHandle};
 
 #[derive(Debug)]
 pub struct EngineBuilder {
@@ -39,9 +39,7 @@ static MAIN_LOOP: AtomicInitCell<WorkId> = AtomicInitCell::new();
 impl EngineBuilder {
     /// Creates a new `EngineBuilder` object.
     pub fn new() -> EngineBuilder {
-        EngineBuilder {
-            max_workers: 1,
-        }
+        EngineBuilder { max_workers: 1 }
     }
 
     /// Consumes the builder and creates the `Engine` instance.
@@ -51,7 +49,8 @@ impl EngineBuilder {
     ///
     /// No `Engine` object is returned because this method instantiates the engine singleton.
     pub fn build<F>(self, func: F)
-        where F: FnOnce()
+    where
+        F: FnOnce(),
     {
         let _s = Stopwatch::new("Build engine");
 
@@ -68,7 +67,9 @@ impl EngineBuilder {
                 let mut message_pump = window.message_pump();
 
                 // write data out to `window` without dropping the old (uninitialized) value.
-                unsafe { ptr::write(out.get_mut(), window); }
+                unsafe {
+                    ptr::write(out.get_mut(), window);
+                }
 
                 // Sync with
                 barrier_clone.wait();
@@ -95,7 +96,6 @@ impl EngineBuilder {
         material.set_f32("surface_shininess", 4.0);
         let default_material_id = renderer.register_shared_material(material);
 
-
         let (sender, receiever) = mpsc::channel();
 
         // Init aysnc subsystem.
@@ -107,7 +107,9 @@ impl EngineBuilder {
                 let sender = sender.clone();
                 thread::spawn(move || {
                     // Initialize thread-local renderer message channel.
-                    RENDER_MESSAGE_CHANNEL.with(move |channel| { channel.init(sender); });
+                    RENDER_MESSAGE_CHANNEL.with(move |channel| {
+                        channel.init(sender);
+                    });
 
                     // Initialize worker thread to support fibers and wait for work to be available.
                     scheduler::run_wait_fiber();
@@ -116,7 +118,9 @@ impl EngineBuilder {
         }
 
         // Set the current thread's channel.
-        RENDER_MESSAGE_CHANNEL.with(move |channel| { channel.init(sender); });
+        RENDER_MESSAGE_CHANNEL.with(move |channel| {
+            channel.init(sender);
+        });
 
         let mut engine = Box::new(Engine {
             window: window,
@@ -143,7 +147,9 @@ impl EngineBuilder {
             func();
         }
 
-        let main_loop = scheduler::start(move || { main_loop(engine); });
+        let main_loop = scheduler::start(move || {
+            main_loop(engine);
+        });
 
         MAIN_LOOP.init(main_loop.work_id());
 
@@ -156,7 +162,10 @@ impl EngineBuilder {
     }
 
     pub fn max_workers(&mut self, workers: usize) -> &mut EngineBuilder {
-        assert!(workers > 0, "There must be at least one worker for the engine to run");
+        assert!(
+            workers > 0,
+            "There must be at least one worker for the engine to run"
+        );
         self.max_workers = workers;
         self
     }
@@ -199,7 +208,8 @@ thread_local! {
 
 // TODO: This shouln't be public, it's for engine-internal use.
 pub fn scene_graph<F, T>(func: F) -> T
-    where F: FnOnce(&TransformGraph) -> T
+where
+    F: FnOnce(&TransformGraph) -> T,
 {
     let engine = INSTANCE.borrow();
     unsafe { func(&(***engine).scene_graph) }
@@ -207,7 +217,8 @@ pub fn scene_graph<F, T>(func: F) -> T
 
 // TODO: This shouln't be public, it's for engine-internal use.
 pub fn input<F, T>(func: F) -> T
-    where F: FnOnce(&Input) -> T
+where
+    F: FnOnce(&Input) -> T,
 {
     let engine = INSTANCE.borrow();
     unsafe { func(&(***engine).input) }
@@ -215,7 +226,8 @@ pub fn input<F, T>(func: F) -> T
 
 // TODO: This shouln't be public, it's for engine-internal use.
 pub fn window<F, T>(func: F) -> T
-    where F: FnOnce(&Window) -> T
+where
+    F: FnOnce(&Window) -> T,
 {
     let engine = INSTANCE.borrow();
     unsafe { func(&(***engine).window) }
@@ -240,7 +252,7 @@ pub fn send_message(message: EngineMessage) {
 }
 
 pub fn run_each_frame<F>(func: F)
-    where
+where
     F: 'static,
     F: FnMut(),
     F: Send,
@@ -276,7 +288,7 @@ fn main_loop(mut engine: Box<Engine>) {
                     // TODO: Process input messages.
                     match message {
                         Message::Close => break 'main,
-                        Message::Activate => {}, // We don't handle window focus currently.
+                        Message::Activate => {} // We don't handle window focus currently.
                         _ => engine.input.push_input(message),
                     }
                 }
@@ -323,10 +335,13 @@ fn main_loop(mut engine: Box<Engine>) {
                             let anchor_id = engine.renderer.register_anchor(anchor);
 
                             transform_inner.set_anchor(anchor_id);
-                        },
+                        }
                         EngineMessage::Camera(camera_data, transform_inner) => {
                             let _s = Stopwatch::new("Camera message");
-                            assert!(engine.camera.is_none(), "Can't add camera, one is already registered");
+                            assert!(
+                                engine.camera.is_none(),
+                                "Can't add camera, one is already registered"
+                            );
 
                             let anchor_id = match transform_inner.anchor() {
                                 Some(anchor) => anchor,
@@ -338,7 +353,7 @@ fn main_loop(mut engine: Box<Engine>) {
                             let camera_id = engine.renderer.register_camera(camera);
 
                             engine.camera = Some((camera_data, camera_id));
-                        },
+                        }
                         EngineMessage::Light(light_inner) => {
                             let _s = Stopwatch::new("Light message");
                             {
@@ -358,13 +373,13 @@ fn main_loop(mut engine: Box<Engine>) {
                             //
                             // // TODO: Create an association between `material_id` and `material_source`.
                             unimplemented!();
-                        },
+                        }
                         EngineMessage::Mesh(mesh_id, mesh_data) => {
                             let _s = Stopwatch::new("Mesh message");
                             let gpu_mesh = engine.renderer.register_mesh(&mesh_data);
                             let last = engine.mesh_map.insert(mesh_id, gpu_mesh);
                             assert!(last.is_none(), "Duplicate mesh_id found: {:?}", mesh_id);
-                        },
+                        }
                         EngineMessage::MeshInstance(mesh_renderer_data, transform_inner) => {
                             let _s = Stopwatch::new("Mesh instance message");
                             let anchor_id = match transform_inner.anchor() {
@@ -373,9 +388,9 @@ fn main_loop(mut engine: Box<Engine>) {
                             };
 
                             let gpu_mesh = *engine
-                            .mesh_map
-                            .get(&mesh_renderer_data.mesh_id())
-                            .expect("No gpu mesh found for mesh id");
+                                .mesh_map
+                                .get(&mesh_renderer_data.mesh_id())
+                                .expect("No gpu mesh found for mesh id");
 
                             let mut mesh_instance = MeshInstance::with_shared_material(
                                 gpu_mesh,
@@ -405,9 +420,10 @@ fn main_loop(mut engine: Box<Engine>) {
                     // date nodes.
                     if let Some(anchor_id) = node.anchor() {
                         // Send position/rotation/scale to renderer anchor.
-                        let anchor = engine.renderer
-                        .get_anchor_mut(anchor_id)
-                        .expect("Node had anchor id but render did not have specified anchor");
+                        let anchor = engine
+                            .renderer
+                            .get_anchor_mut(anchor_id)
+                            .expect("Node had anchor id but render did not have specified anchor");
                         anchor.set_position(node.position);
                         anchor.set_orientation(node.orientation);
                         anchor.set_scale(node.scale);
@@ -419,7 +435,8 @@ fn main_loop(mut engine: Box<Engine>) {
             if let Some((ref camera_data, ref camera_id)) = engine.camera {
                 let _s = Stopwatch::new("Update renderer camera");
 
-                let render_camera = engine.renderer
+                let render_camera = engine
+                    .renderer
                     .get_camera_mut(*camera_id)
                     .expect("Camera didn't exist for camera id");
 
@@ -435,7 +452,10 @@ fn main_loop(mut engine: Box<Engine>) {
 
                 for light in &engine.lights {
                     let &(ref id, ref data) = &**light;
-                    let light = engine.renderer.get_light_mut(*id.borrow()).expect("Renderer has no such light");
+                    let light = engine
+                        .renderer
+                        .get_light_mut(*id.borrow())
+                        .expect("Renderer has no such light");
                     *light = data.borrow().clone();
                 }
             }
@@ -463,10 +483,18 @@ fn main_loop(mut engine: Box<Engine>) {
     let stats = stats::analyze(&*frame_times, target_frame_time);
 
     println!("Performance statistics:");
-    println!("  Duration: {} ({} frames)", PrettyDuration(run_duration), frame_times.len());
+    println!(
+        "  Duration: {} ({} frames)",
+        PrettyDuration(run_duration),
+        frame_times.len()
+    );
     println!("  Min: {}", PrettyDuration(stats.min));
     println!("  Max: {}", PrettyDuration(stats.max));
     println!("  Mean: {}", PrettyDuration(stats.mean));
     println!("  Std: {}", PrettyDuration(stats.std));
-    println!("  Long frames: {} ({:.2}%)", stats.long_frames, stats.long_frame_ratio * 100.0);
+    println!(
+        "  Long frames: {} ({:.2}%)",
+        stats.long_frames,
+        stats.long_frame_ratio * 100.0
+    );
 }

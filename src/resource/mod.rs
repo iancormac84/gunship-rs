@@ -1,8 +1,8 @@
 use engine::{self, EngineMessage};
-use scheduler::{self, Async};
+use obj::{self, Obj};
 use polygon::geometry::mesh::{BuildMeshError, MeshBuilder};
 use polygon::math::Vector2;
-use obj::{self, Obj};
+use scheduler::{self, Async};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
@@ -18,7 +18,7 @@ static MATERIAL_ID_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
 /// Load all data from the specified file as an array of bytes.
 pub fn load_file_bytes<'a, P>(path: P) -> Async<'a, Result<Vec<u8>, io::Error>>
-    where
+where
     P: 'a,
     P: AsRef<Path> + Send,
 {
@@ -40,7 +40,7 @@ pub fn load_file_bytes<'a, P>(path: P) -> Async<'a, Result<Vec<u8>, io::Error>>
 
 /// Load all data from the specified file as a `String`.
 pub fn load_file_text<'a, P>(path: P) -> Async<'a, Result<String, LoadTextError>>
-    where
+where
     P: 'a,
     P: AsRef<Path> + Send,
 {
@@ -75,20 +75,23 @@ impl From<FromUtf8Error> for LoadTextError {
 /// Loads a mesh data from the specified path and performs any necessary processing to prepare it
 /// to be used in rendering.
 pub fn load_mesh<'a, P>(path: P) -> Async<'a, Result<Mesh, LoadMeshError>>
-    where
+where
     P: 'a,
-    P: AsRef<Path> + Send + Into<String>
+    P: AsRef<Path> + Send + Into<String>,
 {
     scheduler::start(move || {
         let _s = Stopwatch::new("Load mesh");
-        let extension: Option<String> = path.as_ref().extension().map(|ext| ext.to_string_lossy().into_owned());
+        let extension: Option<String> = path
+            .as_ref()
+            .extension()
+            .map(|ext| ext.to_string_lossy().into_owned());
 
         // Load mesh source and parse mesh data based on file type.
         let mesh_data = match extension {
             Some(ref ext) if ext == "dae" => {
                 let text = load_file_text(path).await()?;
                 collada::load_resources(text)?
-            },
+            }
             Some(ref ext) if ext == "obj" => {
                 let text = load_file_text(path).await()?;
 
@@ -129,10 +132,10 @@ pub fn load_mesh<'a, P>(path: P) -> Async<'a, Result<Mesh, LoadMeshError>>
                     .set_texcoord_data(&*texcoords)
                     .set_indices(&*indices)
                     .build()?
-            },
+            }
             _ => {
                 return Err(LoadMeshError::UnsupportedFileType(path.into()));
-            },
+            }
         };
 
         // Create handle for mesh data and asynchronously register it with the renderer.
@@ -196,9 +199,9 @@ impl From<obj::Error> for LoadMeshError {
 }
 
 pub fn load_material<'a, P>(path: P) -> Async<'a, Result<Material, LoadMaterialError>>
-    where
+where
     P: 'a,
-    P: AsRef<Path> + Send
+    P: AsRef<Path> + Send,
 {
     scheduler::start(move || {
         let _s = Stopwatch::new("Load material");

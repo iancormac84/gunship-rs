@@ -1,11 +1,11 @@
 use engine::{self, EngineMessage};
-use transform::Transform;
 use std::f32::consts::PI;
 use std::fmt::{self, Debug, Formatter};
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::ptr::Unique;
+use transform::Transform;
 
 pub struct Camera {
     data: Unique<CameraData>,
@@ -52,11 +52,15 @@ impl Debug for Camera {
 impl Deref for Camera {
     type Target = CameraData;
 
-    fn deref(&self) -> &CameraData { unsafe { self.data.get() } }
+    fn deref(&self) -> &CameraData {
+        unsafe { self.data.get() }
+    }
 }
 
 impl DerefMut for Camera {
-    fn deref_mut(&mut self) -> &mut CameraData { unsafe { self.data.get_mut() } }
+    fn deref_mut(&mut self) -> &mut CameraData {
+        unsafe { self.data.get_mut() }
+    }
 }
 
 #[derive(Debug)]
@@ -68,13 +72,21 @@ pub struct CameraData {
 }
 
 impl CameraData {
-    pub fn fov(&self) -> f32 { self.fov }
+    pub fn fov(&self) -> f32 {
+        self.fov
+    }
 
-    pub fn aspect(&self) -> f32 { self.aspect }
+    pub fn aspect(&self) -> f32 {
+        self.aspect
+    }
 
-    pub fn near(&self) -> f32 { self.near }
+    pub fn near(&self) -> f32 {
+        self.near
+    }
 
-    pub fn far(&self) -> f32 { self.far }
+    pub fn far(&self) -> f32 {
+        self.far
+    }
 }
 
 impl Default for CameraData {

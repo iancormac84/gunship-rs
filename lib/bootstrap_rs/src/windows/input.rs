@@ -3,8 +3,7 @@ use std::mem::{self, size_of};
 use std::ptr;
 use window::Message::*;
 use window::*;
-use super::winapi::*;
-use super::user32;
+use winapi::{shared::windef::{HWND, RECT}, um::winuser::{HRAWINPUT, RAWINPUT, RI_MOUSE_LEFT_BUTTON_UP, ShowCursor, ClipCursor, RAWINPUTDEVICE, GetRawInputData}};
 
 // use windows::winapi::winuser::RAWINPUTDEVICE;
 // use windows::xinput::*;
@@ -36,7 +35,7 @@ use super::user32;
 // }
 
 pub fn set_cursor_visibility(visible: bool) {
-    unsafe { user32::ShowCursor(visible as i32); }
+    unsafe { ShowCursor(visible as i32); }
 }
 
 pub fn set_cursor_bounds(top: i32, left: i32, bottom: i32, right: i32) {
@@ -48,13 +47,13 @@ pub fn set_cursor_bounds(top: i32, left: i32, bottom: i32, right: i32) {
     };
 
     unsafe {
-        user32::ClipCursor(&rect);
+        ClipCursor(&rect);
     }
 }
 
 pub fn clear_cursor_bounds() {
     unsafe {
-        user32::ClipCursor(ptr::null());
+        ClipCursor(ptr::null());
     }
 }
 
@@ -76,7 +75,7 @@ pub fn handle_raw_input(messages: &mut VecDeque<Message>, lParam: LPARAM) {
     // Call GetRawInputData once to get the size of the data.
     let mut size: UINT = 0;
     unsafe {
-        user32::GetRawInputData(
+        GetRawInputData(
             lParam as HRAWINPUT,
             RID_INPUT,
             ptr::null_mut(),
@@ -87,7 +86,7 @@ pub fn handle_raw_input(messages: &mut VecDeque<Message>, lParam: LPARAM) {
     let raw = unsafe {
         let mut raw = mem::uninitialized::<RAWINPUT>();
         assert!(
-            user32::GetRawInputData(
+            GetRawInputData(
                 lParam as HRAWINPUT,
                 RID_INPUT,
                 ((&mut raw) as *mut RAWINPUT) as LPVOID,

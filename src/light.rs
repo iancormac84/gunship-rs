@@ -19,9 +19,7 @@ impl DirectionalLight {
         let light = Light::directional(direction, strength, color);
         let data = Arc::new((AtomicInitCell::new(), AtomicRefCell::new(light)));
         engine::send_message(EngineMessage::Light(data.clone()));
-        DirectionalLight {
-            data: data,
-        }
+        DirectionalLight { data: data }
     }
 
     pub fn forget(self) {
@@ -39,9 +37,7 @@ impl PointLight {
         let light = Light::point(radius, strength, color);
         let data = Arc::new((AtomicInitCell::new(), AtomicRefCell::new(light)));
         engine::send_message(EngineMessage::Light(data.clone()));
-        PointLight {
-            data: data,
-        }
+        PointLight { data: data }
     }
 
     pub fn forget(self) {

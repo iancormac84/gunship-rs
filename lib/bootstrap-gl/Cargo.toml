@@ -3,13 +3,10 @@
 name = "bootstrap-gl"
 version = "0.1.0"
 authors = ["David LeGare <excaliburhissheath@gmail.com>"]
+edition = "2018"
 
 [dependencies]
-kernel32-sys = "0.2"
-gdi32-sys = "0.2"
-opengl32-sys = "0.1"
-user32-sys = "0.1"
-winapi = "0.2"
+winapi = { version = "0.3", features = ["wingdi", "errhandlingapi", "libloaderapi"] }
 
 [dev_dependencies]
 bootstrap_rs = { path = "../bootstrap_rs" }

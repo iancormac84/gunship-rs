@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate gunship;
 
-use gunship::*;
 use gunship::camera::Camera;
 use gunship::engine::EngineBuilder;
 use gunship::light::DirectionalLight;
+use gunship::math::*;
 use gunship::mesh_renderer::MeshRenderer;
 use gunship::transform::Transform;
-use gunship::math::*;
+use gunship::*;
 
 fn main() {
     let mut builder = EngineBuilder::new();
@@ -27,9 +27,16 @@ fn main() {
 /// 4. Create transform in scene and assign it the camera.
 fn setup_scene() {
     // Start both async operations but don't await either, allowing both to run concurrently.
-    let mesh = resource::load_mesh("lib/polygon_rs/resources/meshes/epps_head.obj").await().unwrap();
+    let mesh = resource::load_mesh("lib/polygon_rs/resources/meshes/epps_head.obj")
+        .await()
+        .unwrap();
 
-    DirectionalLight::new(Vector3::new(1.0, -1.0, -1.0), Color::rgb(1.0, 1.0, 1.0), 0.25).forget();
+    DirectionalLight::new(
+        Vector3::new(1.0, -1.0, -1.0),
+        Color::rgb(1.0, 1.0, 1.0),
+        0.25,
+    )
+    .forget();
 
     let mut camera_transform = Transform::new();
     camera_transform.set_position(Point::new(0.0, 0.0, 35.0));
@@ -51,11 +58,7 @@ fn setup_scene() {
     for row in 0..NUM_ROWS {
         for col in 0..NUM_ROWS {
             let mut mesh_transform = Transform::new();
-            mesh_transform.set_position(Point::new(
-                coord(col),
-                coord(row),
-                0.0,
-            ));
+            mesh_transform.set_position(Point::new(coord(col), coord(row), 0.0));
             MeshRenderer::new(&mesh, &mesh_transform).forget();
             mesh_transform.forget();
         }

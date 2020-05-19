@@ -5,7 +5,7 @@ macro_rules! derive_Component {
             type Manager = $crate::component::DefaultManager<$type_name>;
             type Message = $crate::component::DefaultMessage<$type_name>;
         }
-    }
+    };
 }
 
 #[macro_export]
@@ -43,7 +43,7 @@ macro_rules! derive_Singleton {
                 }
             }
         }
-    }
+    };
 }
 
 // TODO: Make this threadsafe by useing `std::sync::Once`.
@@ -58,5 +58,5 @@ macro_rules! warn_once {
                 println!($message);
             }
         }
-    }
+    };
 }

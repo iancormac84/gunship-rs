@@ -1,15 +1,12 @@
-extern crate kernel32;
-extern crate winapi;
-
 use ::{Fiber, PREV};
 use std::mem;
 use std::ptr;
-use self::winapi::*;
+use winapi::um::winbase::{ConvertThreadToFiber, CreateFiber, SwitchToFiber};
 
 pub type PlatformId = LPVOID;
 
 pub fn init() -> PlatformId {
-    let fiber = unsafe { kernel32::ConvertThreadToFiber(ptr::null_mut()) };
+    let fiber = unsafe { ConvertThreadToFiber(ptr::null_mut()) };
 
     if fiber.is_null() {
         println!("ERROR: Failed to convert main thread to a fiber");
@@ -21,7 +18,7 @@ pub fn init() -> PlatformId {
 pub fn create_fiber(stack_size: usize, func: fn(Fiber) -> !) -> PlatformId
 {
     let fiber = unsafe {
-        kernel32::CreateFiber(
+        CreateFiber(
             stack_size as u32,
             Some(fiber_proc),
             func as LPVOID,
@@ -38,7 +35,7 @@ pub fn create_fiber(stack_size: usize, func: fn(Fiber) -> !) -> PlatformId
 
 /// Makes `fiber` active, then returns the handle of the fiber that resumed the current one.
 pub unsafe fn resume(fiber: PlatformId) {
-    kernel32::SwitchToFiber(fiber);
+    SwitchToFiber(fiber);
 }
 
 /// `data` is secretly a pointer to a `Box<Box<FnBox()>>`.

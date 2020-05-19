@@ -1,20 +1,12 @@
 /// Implements the logic behind converting COLLADA documents to polygon-rs meshes.
-
 extern crate parse_collada as collada;
 
+pub use self::collada::{
+    AnyUri, ArrayElement, Collada, GeometricElement, Geometry, Node, PrimitiveElements,
+    UriFragment, VisualScene,
+};
 use math::*;
 use polygon::geometry::mesh::*;
-pub use self::collada::{
-    AnyUri,
-    ArrayElement,
-    Collada,
-    GeometricElement,
-    Geometry,
-    Node,
-    PrimitiveElements,
-    UriFragment,
-    VisualScene
-};
 
 #[derive(Debug)]
 pub enum Error {
@@ -124,8 +116,9 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
     // Grab the first primitive element in the mesh.
     // TODO: Handle all primitive elements in the mesh, not just one. This is dependent on polygon
     // being able to support submeshes.
-    let primitive = try!(
-        mesh.primitive_elements.first()
+    let primitive = try!(mesh
+        .primitive_elements
+        .first()
         .ok_or(Error::MissingPrimitiveElement));
 
     let triangles = match *primitive {
@@ -133,14 +126,11 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
         _ => return Err(Error::UnsupportedPrimitiveType),
     };
 
-    let primitive_indices =
-        triangles.p
-        .as_ref()
-        .ok_or(Error::MissingPrimitiveIndices)?;
+    let primitive_indices = triangles.p.as_ref().ok_or(Error::MissingPrimitiveIndices)?;
 
     // Iterate over the indices, rearranging the normal data to match the position data.
     let stride = triangles.input.len(); // TODO: Do we have a better way of calculating stride? What if one of the sources isn't used? OR USED TWICE!?
-    let count  = triangles.count;
+    let count = triangles.count;
     let index_count = primitive_indices.len();
     let vertex_count = count as u32 * 3;
 
@@ -165,27 +155,28 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
         // Retrieve the approriate source. If the semantic is "VERTEX" then the offset is
         // associated with all of the sources specified by the <vertex> element.
         let source_ids = match &*input.semantic {
-            "VERTEX" => {
-                mesh.vertices.input
+            "VERTEX" => mesh
+                .vertices
+                .input
                 .iter()
                 .map(|input| (input.semantic.as_ref(), input.source.as_ref()))
-                .collect()
-            },
+                .collect(),
             _ => vec![(input.semantic.as_ref(), input.source.as_ref())],
         };
 
         // For each of the semantics at the current offset, push their info into the source map.
         for (semantic, source_id) in source_ids {
             // Retrieve the <source> element for the input.
-            let source = try!(mesh.source
-            .iter()
-            .find(|source| source.id == source_id)
-            .ok_or(Error::MissingSourceData));
+            let source = try!(mesh
+                .source
+                .iter()
+                .find(|source| source.id == source_id)
+                .ok_or(Error::MissingSourceData));
 
             // Retrieve it's array_element, which is technically optional according to the spec but is
             // probably going to be there for the position data.
-            let array_element = try!(
-                source.array_element
+            let array_element = try!(source
+                .array_element
                 .as_ref()
                 .ok_or(Error::MissingPositionData));
 
@@ -207,7 +198,8 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
 
     let mut mesh_builder = MeshBuilder::new();
     let mut unsupported_semantic_flag = false;
-    for vertex_indices in GroupBy::new(primitive_indices, stride).unwrap() { // TODO: This can't fail... right? I'm pretty sure the above checks make sure this is correct.
+    for vertex_indices in GroupBy::new(primitive_indices, stride).unwrap() {
+        // TODO: This can't fail... right? I'm pretty sure the above checks make sure this is correct.
         // We iterate over each group of indices where each group represents the indices for a
         // single vertex. Within that vertex we need
         let mut vertex = Vertex::new(Point::origin());
@@ -224,24 +216,29 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
                             mapper.data[index * 3 + 1],
                             mapper.data[index * 3 + 2],
                         );
-                    },
+                    }
                     "NORMAL" => {
                         vertex.normal = Some(Vector3::new(
                             mapper.data[index * 3 + 0],
                             mapper.data[index * 3 + 1],
                             mapper.data[index * 3 + 2],
                         ));
-                    },
+                    }
                     "TEXCOORD" => {
                         vertex.texcoord.push(Vector2::new(
                             mapper.data[index * 2 + 0],
                             mapper.data[index * 2 + 1],
                         ));
-                    },
-                    _ => if !unsupported_semantic_flag {
-                        unsupported_semantic_flag = true;
-                        println!("WARNING: Unsupported vertex semantic {} in mesh will not be used", mapper.semantic);
-                    },
+                    }
+                    _ => {
+                        if !unsupported_semantic_flag {
+                            unsupported_semantic_flag = true;
+                            println!(
+                                "WARNING: Unsupported vertex semantic {} in mesh will not be used",
+                                mapper.semantic
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -252,22 +249,22 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
     let indices: Vec<u32> = (0..vertex_count).collect();
 
     mesh_builder
-    .set_indices(&*indices)
-    .build()
-    .map_err(|err| Error::BuildMeshError(err))
+        .set_indices(&*indices)
+        .build()
+        .map_err(|err| Error::BuildMeshError(err))
 }
 
 struct IndexMapper<'a> {
-    offset:   usize,
+    offset: usize,
     semantic: &'a str,
-    data:     &'a [f32],
+    data: &'a [f32],
 }
 
 // TODO: Where even should this live? It's generally useful but I'm only using it here right now.
 struct GroupBy<'a, T: 'a> {
-    next:     *const T,
-    end:      *const T,
-    stride:   usize,
+    next: *const T,
+    end: *const T,
+    stride: usize,
     _phantom: ::std::marker::PhantomData<&'a T>,
 }
 
@@ -297,8 +294,6 @@ impl<'a, T: 'a> Iterator for GroupBy<'a, T> {
         let next = self.next;
         self.next = unsafe { self.next.offset(self.stride as isize) };
 
-        Some(unsafe {
-            ::std::slice::from_raw_parts(next, self.stride)
-        })
+        Some(unsafe { ::std::slice::from_raw_parts(next, self.stride) })
     }
 }
