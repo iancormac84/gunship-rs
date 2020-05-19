@@ -1,9 +1,22 @@
+use crate::window::Message::*;
+use crate::window::*;
 use std::collections::VecDeque;
 use std::mem::{self, size_of};
 use std::ptr;
-use window::Message::*;
-use window::*;
-use winapi::{shared::windef::{HWND, RECT}, um::winuser::{HRAWINPUT, RAWINPUT, RI_MOUSE_LEFT_BUTTON_UP, ShowCursor, ClipCursor, RAWINPUTDEVICE, GetRawInputData}};
+use winapi::{
+    shared::{
+        minwindef::{FALSE, LPARAM, LPVOID, UINT},
+        windef::{HWND, RECT},
+    },
+    um::winuser::{
+        ClipCursor, GetRawInputData, RegisterRawInputDevices, ShowCursor, HRAWINPUT,
+        MOUSE_MOVE_RELATIVE, RAWINPUT, RAWINPUTDEVICE, RAWINPUTHEADER, RID_INPUT, RIM_TYPEMOUSE,
+        RI_MOUSE_BUTTON_4_DOWN, RI_MOUSE_BUTTON_4_UP, RI_MOUSE_BUTTON_5_DOWN, RI_MOUSE_BUTTON_5_UP,
+        RI_MOUSE_LEFT_BUTTON_DOWN, RI_MOUSE_LEFT_BUTTON_UP, RI_MOUSE_MIDDLE_BUTTON_DOWN,
+        RI_MOUSE_MIDDLE_BUTTON_UP, RI_MOUSE_RIGHT_BUTTON_DOWN, RI_MOUSE_RIGHT_BUTTON_UP,
+        RI_MOUSE_WHEEL, WHEEL_DELTA,
+    },
+};
 
 // use windows::winapi::winuser::RAWINPUTDEVICE;
 // use windows::xinput::*;
@@ -35,7 +48,9 @@ use winapi::{shared::windef::{HWND, RECT}, um::winuser::{HRAWINPUT, RAWINPUT, RI
 // }
 
 pub fn set_cursor_visibility(visible: bool) {
-    unsafe { ShowCursor(visible as i32); }
+    unsafe {
+        ShowCursor(visible as i32);
+    }
 }
 
 pub fn set_cursor_bounds(top: i32, left: i32, bottom: i32, right: i32) {
@@ -62,10 +77,11 @@ pub fn register_raw_input(hwnd: HWND) {
         usUsagePage: 0x01,
         usUsage: 0x02,
         dwFlags: 0, //RIDEV_NOLEGACY,   // Adds HID mouse and also ignores legacy mouse messages.
-        hwndTarget: hwnd
+        hwndTarget: hwnd,
     };
 
-    if unsafe { user32::RegisterRawInputDevices(&devices, 1, size_of::<RAWINPUTDEVICE>() as u32) } == FALSE {
+    if unsafe { RegisterRawInputDevices(&devices, 1, size_of::<RAWINPUTDEVICE>() as u32) } == FALSE
+    {
         // Registration failed. Call GetLastError for the cause of the error.
         println!("WARNING: Raw input registration failed because reasons.");
     }
@@ -80,7 +96,8 @@ pub fn handle_raw_input(messages: &mut VecDeque<Message>, lParam: LPARAM) {
             RID_INPUT,
             ptr::null_mut(),
             &mut size,
-            size_of::<RAWINPUTHEADER>() as u32);
+            size_of::<RAWINPUTHEADER>() as u32,
+        );
     }
 
     let raw = unsafe {
@@ -91,8 +108,9 @@ pub fn handle_raw_input(messages: &mut VecDeque<Message>, lParam: LPARAM) {
                 RID_INPUT,
                 ((&mut raw) as *mut RAWINPUT) as LPVOID,
                 &mut size,
-                size_of::<RAWINPUTHEADER>() as u32)
-            == size);
+                size_of::<RAWINPUTHEADER>() as u32
+            ) == size
+        );
         raw
     };
 
@@ -102,7 +120,6 @@ pub fn handle_raw_input(messages: &mut VecDeque<Message>, lParam: LPARAM) {
     assert!(raw_mouse.usFlags == MOUSE_MOVE_RELATIVE);
 
     messages.push_back(MouseMove(raw_mouse.lLastX, raw_mouse.lLastY));
-
 
     if raw_mouse.usButtonFlags != 0 {
         let button_flags = raw_mouse.usButtonFlags;

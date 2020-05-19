@@ -67,9 +67,9 @@ impl<T: 'static + ?Sized> Clone for CallbackManager<T> {
 
 impl<T: 'static + ?Sized> Debug for CallbackManager<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "CallbackManager {{ "));
+        write!(f, "CallbackManager {{ ")?;
         for key in self.callbacks.keys() {
-            try!(write!(f, "{:?} ", key));
+            write!(f, "{:?} ", key)?;
         }
         write!(f, "}}")
     }

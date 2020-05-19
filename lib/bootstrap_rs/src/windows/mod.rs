@@ -1,8 +1,8 @@
 #![allow(bad_style)]
 
-pub mod window;
-pub mod input;
 pub mod file;
+pub mod input;
+pub mod window;
 
 pub trait ToCU16Str {
     fn to_c_u16(&self) -> Vec<u16>;

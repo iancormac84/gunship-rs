@@ -106,7 +106,7 @@ pub fn load_resources<T: Into<String>>(source: T) -> Result<Mesh> {
             };
 
             let mesh = match geometry.geometric_element {
-                GeometricElement::Mesh(ref mesh) => try!(collada_mesh_to_mesh(mesh)),
+                GeometricElement::Mesh(ref mesh) => collada_mesh_to_mesh(mesh)?,
                 _ => return Err(Error::UnsupportedGeometricElement),
             };
 
@@ -135,7 +135,7 @@ pub fn load_resources<T: Into<String>>(source: T) -> Result<Mesh> {
 
             // Create all of the children and then create the root node.
             for node in visual_scene.node {
-                let child = try!(convert_to_mesh_node(node));
+                let child = convert_to_mesh_node(node)?;
                 mesh_node.children.push(child);
             }
 
@@ -157,9 +157,8 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
     // Grab the first primitive element in the mesh.
     // TODO: Handle all primitive elements in the mesh, not just one. This is dependent on polygon
     // being able to support submeshes.
-    let primitive = try!(
-        mesh.primitive_elements.first()
-        .ok_or(Error::MissingPrimitiveElement));
+    let primitive = mesh.primitive_elements.first()
+        .ok_or(Error::MissingPrimitiveElement)?;
 
     let triangles = match *primitive {
         PrimitiveElements::Triangles(ref triangles) => triangles,
@@ -210,17 +209,16 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
         // For each of the semantics at the current offset, push their info into the source map.
         for (semantic, source_id) in source_ids {
             // Retrieve the <source> element for the input.
-            let source = try!(mesh.source
+            let source = mesh.source
             .iter()
             .find(|source| source.id == source_id)
-            .ok_or(Error::MissingSourceData));
+            .ok_or(Error::MissingSourceData)?;
 
             // Retrieve it's array_element, which is technically optional according to the spec but is
             // probably going to be there for the position data.
-            let array_element = try!(
-                source.array_element
+            let array_element = source.array_element
                 .as_ref()
-                .ok_or(Error::MissingPositionData));
+                .ok_or(Error::MissingPositionData)?;
 
             // Get float data. Raw mesh data should only be float data (the only one that even
             // remotely makes sense is int data, and even then that seems unlikely), so emit an
@@ -304,7 +302,7 @@ fn convert_to_mesh_node(from_node: collada::Node) -> Result<MeshNode> {
 
     // Create children.
     for node in from_node.nodes {
-        let child = try!(convert_to_mesh_node(node));
+        let child = convert_to_mesh_node(node)?;
         mesh_node.children.push(child);
     }
 

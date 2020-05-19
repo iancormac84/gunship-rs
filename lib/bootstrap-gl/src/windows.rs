@@ -1,5 +1,5 @@
 use std::{mem, ptr};
-use winapi::um::{errhandlingapi::GetLastError, libloaderapi::{GetProcAddress, LoadLibraryA}, wingdi::{SwapBuffers, wglCreateContext, wglGetProcAddress, wglDeleteContext}};
+use winapi::{shared::{minwindef::TRUE, windef::{HDC, HGLRC}}, um::{errhandlingapi::GetLastError, libloaderapi::{GetProcAddress, LoadLibraryA}, wingdi::{SwapBuffers, wglCreateContext, wglGetProcAddress, wglMakeCurrent, wglGetCurrentDC, wglDeleteContext, wglGetCurrentContext}, winuser::GetActiveWindow}};
 
 pub type DeviceContext = HDC;
 pub type Context = (HDC, HGLRC);
@@ -96,18 +96,18 @@ pub unsafe fn swap_buffers(context: Context) {
 }
 
 pub unsafe fn make_current(context: Context) -> Context {
-    let old_device_context = opengl32::wglGetCurrentDC();
-    let old_render_context = opengl32::wglGetCurrentContext();
+    let old_device_context = wglGetCurrentDC();
+    let old_render_context = wglGetCurrentContext();
 
     let (device_context, render_context) = context;
-    let result = opengl32::wglMakeCurrent(device_context, render_context);
+    let result = wglMakeCurrent(device_context, render_context);
     if result != TRUE {
-        let hwnd = user32::GetActiveWindow();
+        let hwnd = GetActiveWindow();
         panic!(
             "Failed to make context current, dc: {:?}, context: {:?} last error: 0x:{:X}, actual dc and context: {:?} and {:?}, hwnd: {:?}",
             device_context,
             render_context,
-            kernel32::GetLastError(),
+            GetLastError(),
             old_device_context,
             old_render_context,
             hwnd,

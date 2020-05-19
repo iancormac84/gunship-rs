@@ -1,5 +1,5 @@
-use input::ScanCode;
-use platform;
+use crate::input::ScanCode;
+use crate::platform;
 
 /// Represents an open window on the host machine.
 #[derive(Debug)]
@@ -56,8 +56,7 @@ impl<'a> Iterator for &'a mut Window {
 }
 
 #[derive(Debug)]
-pub enum CreateWindowError {
-}
+pub enum CreateWindowError {}
 
 /// An iterator that does message processing for `Window`.
 pub struct MessagePump(platform::window::WindowInner);

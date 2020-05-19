@@ -31,7 +31,7 @@ impl ChunkHeader {
                 mem::size_of::<Self>())
         };
 
-        try!(file.read(buffer));
+        file.read(buffer)?;
 
         Ok(chunk_header)
     }
@@ -82,7 +82,7 @@ impl FormatChunk {
                 mem::size_of::<Self>())
         };
 
-        try!(file.read(buffer));
+        file.read(buffer)?;
         Ok(chunk)
     }
 }
@@ -159,29 +159,29 @@ impl Wave {
             Ok(file) => file,
         };
 
-        let file_header = try!(ChunkHeader::from_stream(&mut file));
+        let file_header = ChunkHeader::from_stream(&mut file)?;
         assert_eq!(file_header.id, RIFF);
 
         let mut riff_type: [u8; 4] = [0, 0, 0, 0];
-        try!(file.read(&mut riff_type));
+        file.read(&mut riff_type)?;
         assert_eq!(riff_type, WAVE);
 
-        try!(wave.fill_chunk(&mut file));
-        try!(wave.fill_chunk(&mut file));
+        wave.fill_chunk(&mut file)?;
+        wave.fill_chunk(&mut file)?;
 
         Ok(wave)
     }
 
     fn fill_chunk(&mut self, file: &mut File) -> Result<(), ::std::io::Error> {
-        let header = try!(ChunkHeader::from_stream(file));
+        let header = ChunkHeader::from_stream(file)?;
 
         match header.id {
             FMT  => {
-                let chunk = try!(FormatChunk::from_stream(file, header));
+                let chunk = FormatChunk::from_stream(file, header)?;
                 self.format = chunk;
             },
             DATA => {
-                self.data = try!(DataChunk::from_stream(file, header));
+                self.data = DataChunk::from_stream(file, header)?;
             },
             _ => panic!("unknow chunk header: {:?}", header),
         }

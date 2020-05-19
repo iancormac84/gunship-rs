@@ -464,13 +464,13 @@ impl Mul<Matrix3> for Vector3 {
 
 impl Debug for Matrix3 {
     fn fmt(&self, formatter: &mut Formatter) -> Result<(), Error> {
-        try!(formatter.write_str("\n"));
+        formatter.write_str("\n")?;
         for row in 0..3 {
-            try!(formatter.write_str("["));
+            formatter.write_str("[")?;
             for col in 0..3 {
-                try!(write!(formatter, "{:>+.8}, ", self[row][col]));
+                write!(formatter, "{:>+.8}, ", self[row][col])?;
             }
-            try!(formatter.write_str("]\n"));
+            formatter.write_str("]\n")?;
         }
 
         Ok(())

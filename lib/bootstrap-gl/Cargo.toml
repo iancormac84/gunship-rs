@@ -6,7 +6,7 @@ authors = ["David LeGare <excaliburhissheath@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-winapi = { version = "0.3", features = ["wingdi", "errhandlingapi", "libloaderapi"] }
+winapi = { version = "0.3", features = ["minwindef", "windef", "wingdi", "errhandlingapi", "libloaderapi"] }
 
 [dev_dependencies]
 bootstrap_rs = { path = "../bootstrap_rs" }

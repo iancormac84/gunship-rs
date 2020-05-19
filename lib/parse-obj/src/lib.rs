@@ -23,10 +23,10 @@ impl Obj {
         use std::fs::File;
         use std::io::prelude::*;
 
-        let mut file = try!(File::open(path));
+        let mut file = File::open(path)?;
         let mut text = String::new();
 
-        try!(file.read_to_string(&mut text));
+        file.read_to_string(&mut text)?;
 
         Obj::from_str(&text)
     }
@@ -34,8 +34,8 @@ impl Obj {
     pub fn from_str(file_text: &str) -> Result<Obj, Error> {
         /// Pulls the next token and parses it as an `f32`.
         fn pull_f32(tokens: &mut Iterator<Item=&str>) -> Result<f32, Error> {
-            let token = try!(tokens.next().ok_or(Error::MissingElement));
-            let value = try!(f32::from_str(token));
+            let token = tokens.next().ok_or(Error::MissingElement)?;
+            let value = f32::from_str(token)?;
             Ok(value)
         }
 
@@ -46,7 +46,7 @@ impl Obj {
         fn pull_option_f32(tokens: &mut Iterator<Item=&str>) -> Result<Option<f32>, Error> {
             match tokens.next() {
                 Some(token) => {
-                    let value = try!(f32::from_str(token));
+                    let value = f32::from_str(token)?;
                     Ok(Some(value))
                 },
                 None => {
@@ -57,11 +57,11 @@ impl Obj {
 
         /// Parses the next token as 'usize', returning empty tokens as `None`.
         fn pull_option_usize(tokens: &mut Iterator<Item=&str>) -> Result<Option<usize>, Error> {
-            let token = try!(tokens.next().ok_or(Error::MissingElement));
+            let token = tokens.next().ok_or(Error::MissingElement)?;
             if token == "" {
                 Ok(None)
             } else {
-                let value = try!(usize::from_str(token));
+                let value = usize::from_str(token)?;
                 Ok(Some(value))
             }
         }
@@ -83,28 +83,28 @@ impl Obj {
             match line_beginning {
                 // Vertex position data.
                 "v" => {
-                    let x = try!(pull_f32(&mut tokens));
-                    let y = try!(pull_f32(&mut tokens));
-                    let z = try!(pull_f32(&mut tokens));
-                    let w = try!(pull_option_f32(&mut tokens)).unwrap_or(1.0);
+                    let x = pull_f32(&mut tokens)?;
+                    let y = pull_f32(&mut tokens)?;
+                    let z = pull_f32(&mut tokens)?;
+                    let w = pull_option_f32(&mut tokens)?.unwrap_or(1.0);
 
                     positions.push((x, y, z, w));
                 },
 
                 // Vertex texcoord data.
                 "vt" => {
-                    let u = try!(pull_f32(&mut tokens));
-                    let v = try!(pull_option_f32(&mut tokens)).unwrap_or(0.0);
-                    let w = try!(pull_option_f32(&mut tokens)).unwrap_or(0.0);
+                    let u = pull_f32(&mut tokens)?;
+                    let v = pull_option_f32(&mut tokens)?.unwrap_or(0.0);
+                    let w = pull_option_f32(&mut tokens)?.unwrap_or(0.0);
 
                     texcoords.push((u, v, w));
                 },
 
                 // Vertex normal data.
                 "vn" => {
-                    let x = try!(pull_f32(&mut tokens));
-                    let y = try!(pull_f32(&mut tokens));
-                    let z = try!(pull_f32(&mut tokens));
+                    let x = pull_f32(&mut tokens)?;
+                    let y = pull_f32(&mut tokens)?;
+                    let z = pull_f32(&mut tokens)?;
 
                     normals.push((x, y, z));
                 },
@@ -119,17 +119,17 @@ impl Obj {
                         let mut index_tokens = vertex_str.split('/');
 
                         // Position index.
-                        if let Some(index) = try!(pull_option_usize(&mut index_tokens)) {
+                        if let Some(index) = pull_option_usize(&mut index_tokens)? {
                             face_positions.push(index - 1);
                         }
 
                         // Texcoord index.
-                        if let Some(index) = try!(pull_option_usize(&mut index_tokens)) {
+                        if let Some(index) = pull_option_usize(&mut index_tokens)? {
                             face_texcoords.push(index - 1);
                         }
 
                         // Normal index.
-                        if let Some(index) = try!(pull_option_usize(&mut index_tokens)) {
+                        if let Some(index) = pull_option_usize(&mut index_tokens)? {
                             face_normals.push(index - 1);
                         }
                     }

@@ -9,7 +9,7 @@ build = "build.rs"
 cell-extras = { git = "https://github.com/excaliburHisSheath/cell-extras" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-winapi = { version = "0.3", features = ["wingdi", "errhandlingapi", "libloaderapi", "winuser", "windef"] }
+winapi = { version = "0.3", features = ["timeapi", "fileapi", "winbase", "handleapi", "minwindef", "wingdi", "errhandlingapi", "libloaderapi", "winuser", "windef", "winnt", "processthreadsapi"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"

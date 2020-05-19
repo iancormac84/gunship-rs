@@ -1,16 +1,36 @@
-use input::ScanCode;
-use std::{mem, ptr};
+use super::ToCU16Str;
+use crate::input::ScanCode;
+use crate::platform::input::{handle_raw_input, register_raw_input};
+use crate::window::Message;
+use crate::window::Message::*;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-use super::input::{register_raw_input, handle_raw_input};
-use super::gdi32;
-use super::ToCU16Str;
-use super::kernel32;
-use super::winapi::*;
-use super::user32;
-use super::winmm;
-use window::Message;
-use window::Message::*;
+use std::{mem, ptr};
+use winapi::{
+    shared::{
+        minwindef::{FALSE, LPARAM, LRESULT, TRUE, UINT, WORD, WPARAM},
+        windef::{HDC, HWND, RECT},
+    },
+    um::{
+        errhandlingapi::GetLastError,
+        libloaderapi::GetModuleHandleW,
+        processthreadsapi::{GetCurrentProcess, SetPriorityClass},
+        timeapi::{timeBeginPeriod, timeEndPeriod},
+        winbase::REALTIME_PRIORITY_CLASS,
+        wingdi::{
+            ChoosePixelFormat, SetPixelFormat, PFD_DOUBLEBUFFER, PFD_DRAW_TO_WINDOW,
+            PFD_MAIN_PLANE, PFD_SUPPORT_OPENGL, PFD_TYPE_RGBA, PIXELFORMATDESCRIPTOR,
+        },
+        winuser::{
+            CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetDC, GetPropW,
+            GetWindowRect, PeekMessageW, RegisterClassExW, SetPropW, TranslateMessage, WaitMessage,
+            CS_HREDRAW, CS_OWNDC, CS_VREDRAW, CW_USEDEFAULT, MSG, WM_ACTIVATEAPP, WM_CLOSE,
+            WM_DESTROY, WM_INPUT, WM_KEYDOWN, WM_KEYUP, WM_MOUSEMOVE, WM_SYSKEYDOWN, WM_SYSKEYUP,
+            WNDCLASSEXW, WS_CAPTION, WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_SYSMENU,
+            WS_VISIBLE,
+        },
+    },
+};
 
 static CLASS_NAME: &'static str = "bootstrap";
 static WINDOW_PROP: &'static str = "window";
@@ -24,7 +44,7 @@ pub struct Window {
 
 impl Window {
     pub fn new(name: &str) -> Window {
-        let instance = unsafe { kernel32::GetModuleHandleW(0 as *const _) };
+        let instance = unsafe { GetModuleHandleW(0 as *const _) };
 
         let name_u = name.to_c_u16();
         let class_u = CLASS_NAME.to_c_u16();
@@ -45,16 +65,21 @@ impl Window {
         };
 
         let handle = unsafe {
-            let result = user32::RegisterClassExW(&class_info);
+            let result = RegisterClassExW(&class_info);
             if result == 0 {
                 println!("ERROR: Unable to create WINAPI window class");
             }
 
-            user32::CreateWindowExW(
+            CreateWindowExW(
                 0,
                 class_u.as_ptr(),
                 name_u.as_ptr(),
-                WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE,
+                WS_OVERLAPPED
+                    | WS_CAPTION
+                    | WS_SYSMENU
+                    | WS_MINIMIZEBOX
+                    | WS_MAXIMIZEBOX
+                    | WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 800,
@@ -62,16 +87,15 @@ impl Window {
                 ptr::null_mut(),
                 ptr::null_mut(),
                 instance,
-                ptr::null_mut())
+                ptr::null_mut(),
+            )
         };
 
         register_raw_input(handle);
 
         // TODO handle any errors maybe?
 
-        let device_context = unsafe {
-            user32::GetDC(handle)
-        };
+        let device_context = unsafe { GetDC(handle) };
 
         let inner = WindowInner::new(handle);
         let messages_ptr = inner.as_ptr();
@@ -84,13 +108,17 @@ impl Window {
         };
 
         unsafe {
-            user32::SetPropW(handle, WINDOW_PROP.to_c_u16().as_ptr(), messages_ptr as *mut _);
-            let process = kernel32::GetCurrentProcess();
-            kernel32::SetPriorityClass(process, REALTIME_PRIORITY_CLASS);
+            SetPropW(
+                handle,
+                WINDOW_PROP.to_c_u16().as_ptr(),
+                messages_ptr as *mut _,
+            );
+            let process = GetCurrentProcess();
+            SetPriorityClass(process, REALTIME_PRIORITY_CLASS);
         }
 
-        match unsafe { winmm::timeBeginPeriod(1) } {
-            TIMERR_NOERROR => {},
+        match unsafe { timeBeginPeriod(1) } {
+            TIMERR_NOERROR => {}
             TIMERR_NOCANDO => println!("unable to set timer period"),
             _ => panic!("invalid result from winmm::timeBeginPeriod()"),
         }
@@ -121,19 +149,19 @@ impl Window {
             bReserved: 0,
             dwLayerMask: 0,
             dwVisibleMask: 0,
-            dwDamageMask: 0
+            dwDamageMask: 0,
         };
 
         unsafe {
-            let pixel_format = gdi32::ChoosePixelFormat(device_context, &pfd);
+            let pixel_format = ChoosePixelFormat(device_context, &pfd);
             if pixel_format == 0 {
-                let error_code = kernel32::GetLastError();
+                let error_code = GetLastError();
                 println!("WARNING: Unable to find appropriate pixel format, OpenGL rendering might not work, last error: 0x{:x}", error_code);
             }
 
-            let result = gdi32::SetPixelFormat(device_context, pixel_format, &pfd);
+            let result = SetPixelFormat(device_context, pixel_format, &pfd);
             if result == 0 {
-                let error_code = kernel32::GetLastError();
+                let error_code = GetLastError();
                 println!("WARNING: Failed to set pixel format, OpenGL rendering might not work, last error: 0x{:x}", error_code);
             }
         }
@@ -151,9 +179,7 @@ impl Window {
 
     pub fn get_rect(&self) -> (i32, i32, i32, i32) {
         let mut rect: RECT = unsafe { mem::uninitialized() };
-        let result = unsafe {
-            user32::GetWindowRect(self.handle, &mut rect)
-        };
+        let result = unsafe { GetWindowRect(self.handle, &mut rect) };
 
         assert!(result != 0, "Failed to get window rect");
         (rect.top, rect.left, rect.bottom, rect.right)
@@ -175,8 +201,8 @@ impl Window {
 impl Drop for Window {
     fn drop(&mut self) {
         unsafe {
-            winmm::timeEndPeriod(1);
-            user32::DestroyWindow(self.handle);
+            timeEndPeriod(1);
+            DestroyWindow(self.handle);
         }
     }
 }
@@ -214,18 +240,19 @@ impl WindowInner {
         // from ever getting another message?
         loop {
             if self.process_pending_messages() {
-                let maybe_message = self.messages
+                let maybe_message = self
+                    .messages
                     .lock()
                     .expect("Unable to acquire lock on window mutex")
                     .pop_front();
                 if let Some(message) = maybe_message {
-                    return Some(message)
+                    return Some(message);
                 } else {
                     continue;
                 }
             }
 
-            if unsafe { user32::WaitMessage() } == FALSE {
+            if unsafe { WaitMessage() } == FALSE {
                 println!("WARNING: Failed to wait for window messages");
             }
         }
@@ -236,7 +263,7 @@ impl WindowInner {
         // from ever getting another message?
         loop {
             self.process_pending_messages();
-            if unsafe { user32::WaitMessage() } == FALSE {
+            if unsafe { WaitMessage() } == FALSE {
                 println!("WARNING: Failed to wait for window messages");
             }
         }
@@ -248,9 +275,9 @@ impl WindowInner {
 
         unsafe {
             let mut message = mem::uninitialized::<MSG>();
-            while user32::PeekMessageW(&mut message, self.handle, 0, 0, TRUE as u32) > 0 {
-                user32::TranslateMessage(&message);
-                user32::DispatchMessageW(&message);
+            while PeekMessageW(&mut message, self.handle, 0, 0, TRUE as u32) > 0 {
+                TranslateMessage(&message);
+                DispatchMessageW(&message);
 
                 processed_message = true;
             }
@@ -265,8 +292,8 @@ unsafe extern "system" fn message_callback(
     hwnd: HWND,
     uMsg: UINT,
     wParam: WPARAM,
-    lParam: LPARAM) -> LRESULT
-{
+    lParam: LPARAM,
+) -> LRESULT {
     // match uMsg {
     //     WM_NCCREATE => println!("WM_NCCREATE"),
     //     WM_CREATE => println!("WM_CREATE"),
@@ -283,35 +310,44 @@ unsafe extern "system" fn message_callback(
     //     _ => println!("uknown message: {:?}", uMsg),
     // }
 
-    let messages_ptr = user32::GetPropW(hwnd, WINDOW_PROP.to_c_u16().as_ptr()) as *const Mutex<VecDeque<Message>>;
+    let messages_ptr =
+        GetPropW(hwnd, WINDOW_PROP.to_c_u16().as_ptr()) as *const Mutex<VecDeque<Message>>;
     if !messages_ptr.is_null() {
         let inner = &*messages_ptr;
-        let mut messages = inner.lock().expect("Unable to aquire lock on window message queue");
+        let mut messages = inner
+            .lock()
+            .expect("Unable to aquire lock on window message queue");
 
         match uMsg {
-            WM_ACTIVATEAPP => { messages.push_back(Activate); },
+            WM_ACTIVATEAPP => {
+                messages.push_back(Activate);
+            }
             WM_CLOSE => {
                 messages.push_back(Close);
 
                 // Skip default proc to avoid closing the window. Allow client code to perform
                 // whatever handling they want before closing the window.
                 return 0;
-            },
+            }
             WM_DESTROY => messages.push_back(Destroy),
             //WM_PAINT => messages.push_back(Paint), // TODO We need a user defined window proc to allow painting outside of the main loop.
-            WM_SYSKEYDOWN | WM_KEYDOWN => messages.push_back(KeyDown(convert_windows_scancode(wParam, lParam))),
-            WM_SYSKEYUP | WM_KEYUP => messages.push_back(KeyUp(convert_windows_scancode(wParam, lParam))),
+            WM_SYSKEYDOWN | WM_KEYDOWN => {
+                messages.push_back(KeyDown(convert_windows_scancode(wParam, lParam)))
+            }
+            WM_SYSKEYUP | WM_KEYUP => {
+                messages.push_back(KeyUp(convert_windows_scancode(wParam, lParam)))
+            }
             WM_MOUSEMOVE => {
-                let x_coord = ( lParam as i16 ) as i32;
-                let y_coord = ( ( lParam >> 16 ) as i16 ) as i32;
+                let x_coord = (lParam as i16) as i32;
+                let y_coord = ((lParam >> 16) as i16) as i32;
                 messages.push_back(MousePos(x_coord, y_coord));
-            },
+            }
             WM_INPUT => handle_raw_input(&mut *messages, lParam),
-            _ => {},
+            _ => {}
         }
     }
 
-    user32::DefWindowProcW(hwnd, uMsg, wParam, lParam)
+    DefWindowProcW(hwnd, uMsg, wParam, lParam)
 }
 
 fn convert_windows_scancode(wParam: WPARAM, _: LPARAM) -> ScanCode {
@@ -323,13 +359,7 @@ fn convert_windows_scancode(wParam: WPARAM, _: LPARAM) -> ScanCode {
     // Keys in the ascii range get mapped directly.
     let key_code = wParam as u32;
     match key_code {
-        A ... Z
-      | CHAR_0 ... CHAR_9
-      | 32
-      | 192
-      | 120 ... 122 => {
-          unsafe { mem::transmute(key_code) }
-        },
+        A..=Z | CHAR_0..=CHAR_9 | 32 | 192 | 120..=122 => unsafe { mem::transmute(key_code) },
         _ => {
             println!("Unrecognized key press: {}", wParam);
             ScanCode::Unsupported

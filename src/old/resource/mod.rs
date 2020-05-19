@@ -101,10 +101,9 @@ impl ResourceManager {
         }
 
         let mesh_nodes = self.mesh_nodes.borrow();
-        let root = try!(
-            mesh_nodes
+        let root = mesh_nodes
             .get(resource)
-            .ok_or_else(|| format!("No mesh node is identified by the uri {}", resource)));
+            .ok_or_else(|| format!("No mesh node is identified by the uri {}", resource))?;
 
         self.instantiate_node(scene, root)
     }
@@ -135,7 +134,7 @@ impl ResourceManager {
 
         // Instantiate each of the children and set the current node as their parent.
         for node in &node.children {
-            let child = try!(self.instantiate_node(scene, node));
+            let child = self.instantiate_node(scene, node)?;
             transform.add_child(child);
         }
 

@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
-use platform::cocoa::appkit::*;
-use platform::cocoa::foundation::*;
-use platform::cocoa::base::{nil};
 use objc::declare::*;
 use objc::runtime::*;
+use platform::cocoa::appkit::*;
+use platform::cocoa::base::nil;
+use platform::cocoa::foundation::*;
 use std::collections::VecDeque;
 use std::os::raw::c_void;
 use window::Message;
@@ -15,10 +15,10 @@ pub struct ObjcObject(*mut Object);
 unsafe impl Send for ObjcObject {}
 
 mod window_map {
+    use super::ObjcObject;
     use cell_extras::AtomicInitCell;
     use std::collections::{HashMap, VecDeque};
     use std::sync::{Mutex, Once, ONCE_INIT};
-    use super::ObjcObject;
     use window::Message;
 
     static WINDOW_MAP: AtomicInitCell<Mutex<WindowMap>> = AtomicInitCell::new();
@@ -27,7 +27,8 @@ mod window_map {
     pub type WindowMap = HashMap<ObjcObject, VecDeque<Message>>;
 
     pub fn with<F, T>(func: F) -> T
-        where F: FnOnce(&mut WindowMap) -> T
+    where
+        F: FnOnce(&mut WindowMap) -> T,
     {
         // Initialize the map once.
         WINDOW_MAP_INIT.call_once(|| {
@@ -59,13 +60,10 @@ impl Window {
         let MyApplication = {
             let mut class_decl = ClassDecl::new("MyApplication", NSApplication).unwrap();
             unsafe {
-                class_decl.add_method(
-                    sel!(run),
-                    run as extern fn (&mut Object, Sel)
-                );
+                class_decl.add_method(sel!(run), run as extern "C" fn(&mut Object, Sel));
                 class_decl.add_method(
                     sel!(windowWillClose:),
-                    window_will_close as extern fn (&mut Object, Sel, *mut Object),
+                    window_will_close as extern "C" fn(&mut Object, Sel, *mut Object),
                 );
                 class_decl.add_ivar::<*mut c_void>("bootstrapWindow");
                 //class_decl.add_method(
@@ -123,7 +121,9 @@ impl Window {
         loop {
             // First check if there are any pending messages in the window map.
             let pending_message = window_map::with(|window_map| {
-                let messages = window_map.get_mut(&ObjcObject(self.app)).expect("Unable to find window in window map");
+                let messages = window_map
+                    .get_mut(&ObjcObject(self.app))
+                    .expect("Unable to find window in window map");
                 messages.pop_front()
             });
 
@@ -158,7 +158,7 @@ impl Window {
                     YES,
                 );
 
-                msg_send![self.app, sendEvent:event];
+                msg_send![self.app, sendEvent: event];
                 msg_send![self.app, updateWindows];
 
                 if let Some(event) = map_event(event) {
@@ -193,7 +193,9 @@ impl WindowInner {
         loop {
             // First check if there are any pending messages in the window map.
             let pending_message = window_map::with(|window_map| {
-                let messages = window_map.get_mut(&ObjcObject(self.0)).expect("Unable to find window in window map");
+                let messages = window_map
+                    .get_mut(&ObjcObject(self.0))
+                    .expect("Unable to find window in window map");
                 messages.pop_front()
             });
 
@@ -228,7 +230,7 @@ impl WindowInner {
                     YES,
                 );
 
-                msg_send![self.0, sendEvent:event];
+                msg_send![self.0, sendEvent: event];
                 msg_send![self.0, updateWindows];
 
                 if let Some(event) = map_event(event) {
@@ -238,9 +240,7 @@ impl WindowInner {
         }
     }
 
-    pub fn pump_forever(&mut self) {
-
-    }
+    pub fn pump_forever(&mut self) {}
 }
 
 pub struct WindowMessages<'a>(&'a mut Window);
@@ -254,9 +254,9 @@ impl<'a> Iterator for WindowMessages<'a> {
 }
 
 fn map_event(event: *mut Object) -> Option<Message> {
+    use input::ScanCode;
     use platform::cocoa::appkit::NSEventType::*;
     use window::Message::*;
-    use input::ScanCode;
 
     let message = match unsafe { msg_send![event, type] } {
         NSLeftMouseDown => Message::MouseButtonPressed(0),
@@ -266,7 +266,7 @@ fn map_event(event: *mut Object) -> Option<Message> {
         NSMouseMoved | NSLeftMouseDragged | NSRightMouseDragged => {
             let pos: NSPoint = unsafe { msg_send![event, locationInWindow] };
             MousePos(pos.x as i32, pos.y as i32)
-        },
+        }
         //NSMouseEntered => !,
         //NSMouseExited => !,
         NSKeyDown => KeyDown(ScanCode::Unsupported),
@@ -292,17 +292,13 @@ fn map_event(event: *mut Object) -> Option<Message> {
         //NSEventTypeSmartMagnify => !,
         //NSEventTypeQuickLook => !,
         //NSEventTypePressure => !,
-
         _ => return None,
     };
 
     Some(message)
 }
 
-extern fn run(
-    app: &mut Object,
-    _sel: Sel
-) {
+extern "C" fn run(app: &mut Object, _sel: Sel) {
     // TODO: Create autorelease blocks?
 
     let NSApplication = Class::get("NSApplication").unwrap();
@@ -311,16 +307,21 @@ extern fn run(
     }
 }
 
-extern fn window_will_close(app: &mut Object, _sel: Sel, _notification: *mut Object) {
+extern "C" fn window_will_close(app: &mut Object, _sel: Sel, _notification: *mut Object) {
     window_map::with(|window_map| {
-        let message_queue = window_map.get_mut(&ObjcObject(app as *mut _)).expect("No window existed in window map");
+        let message_queue = window_map
+            .get_mut(&ObjcObject(app as *mut _))
+            .expect("No window existed in window map");
         message_queue.push_back(Message::Close);
     });
 }
 
-unsafe fn get_next_message_imp() -> extern fn (*mut Object, Sel, i64, *mut Object, *mut Object, BOOL) -> *mut Object {
+unsafe fn get_next_message_imp(
+) -> extern "C" fn(*mut Object, Sel, i64, *mut Object, *mut Object, BOOL) -> *mut Object {
     let NSApplication = Class::get("NSApplication").unwrap();
-    let method = NSApplication.instance_method(sel!(nextEventMatchingMask:untilDate:inMode:dequeue:)).unwrap();
+    let method = NSApplication
+        .instance_method(sel!(nextEventMatchingMask:untilDate:inMode:dequeue:))
+        .unwrap();
     ::std::mem::transmute(method.implementation())
 }
 
@@ -334,14 +335,19 @@ unsafe fn open_window(app: *mut Object) -> *mut Object {
     let NSTrackingArea = Class::get("NSTrackingArea").unwrap();
 
     let point = NSPoint { x: 0.0, y: 0.0 };
-    let size = NSSize { width: 500.0, height: 500.0 };
-    let frame = NSRect { origin: point, size: size };
+    let size = NSSize {
+        width: 500.0,
+        height: 500.0,
+    };
+    let frame = NSRect {
+        origin: point,
+        size: size,
+    };
 
-    let style_mask =
-        NSWindowMask::NSTitledWindowMask as NSUInteger |
-        NSWindowMask::NSClosableWindowMask as NSUInteger |
-        NSWindowMask::NSMiniaturizableWindowMask as NSUInteger |
-        NSWindowMask::NSResizableWindowMask as NSUInteger;
+    let style_mask = NSWindowMask::NSTitledWindowMask as NSUInteger
+        | NSWindowMask::NSClosableWindowMask as NSUInteger
+        | NSWindowMask::NSMiniaturizableWindowMask as NSUInteger
+        | NSWindowMask::NSResizableWindowMask as NSUInteger;
 
     // Create and initialize the window instance.
     let window: *mut Object = msg_send![NSWindow, alloc];
@@ -366,11 +372,10 @@ unsafe fn open_window(app: *mut Object) -> *mut Object {
     println!("makeFirstResponder result: {:?}", result);
     msg_send![window, setAcceptsMouseMovedEvents: YES];
 
-    let options: NSTrackingAreaOptions =
-        NSTrackingActiveAlways |
-        NSTrackingActiveAlways |
-        NSTrackingMouseEnteredAndExited |
-        NSTrackingMouseMoved;
+    let options: NSTrackingAreaOptions = NSTrackingActiveAlways
+        | NSTrackingActiveAlways
+        | NSTrackingMouseEnteredAndExited
+        | NSTrackingMouseMoved;
 
     let view: *mut Object = msg_send![window, contentView];
     let bounds: NSRect = msg_send![view, bounds];
