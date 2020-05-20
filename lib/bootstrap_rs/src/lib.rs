@@ -1,7 +1,5 @@
 // Almost certainly going to be stabilized as-is, unlikely to break anything.
 #![feature(const_fn)]
-// The scheduler puts a `Condvar` and `Mutex` into some statics.
-#![feature(drop_types_in_const)]
 
 extern crate cell_extras;
 

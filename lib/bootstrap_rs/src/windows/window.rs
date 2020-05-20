@@ -14,6 +14,7 @@ use winapi::{
     um::{
         errhandlingapi::GetLastError,
         libloaderapi::GetModuleHandleW,
+        mmsystem::TIMERR_NOCANDO,
         processthreadsapi::{GetCurrentProcess, SetPriorityClass},
         timeapi::{timeBeginPeriod, timeEndPeriod},
         winbase::REALTIME_PRIORITY_CLASS,
@@ -117,10 +118,8 @@ impl Window {
             SetPriorityClass(process, REALTIME_PRIORITY_CLASS);
         }
 
-        match unsafe { timeBeginPeriod(1) } {
-            TIMERR_NOERROR => {}
-            TIMERR_NOCANDO => println!("unable to set timer period"),
-            _ => panic!("invalid result from winmm::timeBeginPeriod()"),
+        if unsafe { timeBeginPeriod(1) } == TIMERR_NOCANDO {
+            println!("unable to set timer period");
         }
 
         let pfd = PIXELFORMATDESCRIPTOR {
@@ -178,7 +177,7 @@ impl Window {
     }
 
     pub fn get_rect(&self) -> (i32, i32, i32, i32) {
-        let mut rect: RECT = unsafe { mem::uninitialized() };
+        let mut rect: RECT = unsafe { mem::zeroed() };
         let result = unsafe { GetWindowRect(self.handle, &mut rect) };
 
         assert!(result != 0, "Failed to get window rect");
@@ -274,7 +273,7 @@ impl WindowInner {
         let mut processed_message = false;
 
         unsafe {
-            let mut message = mem::uninitialized::<MSG>();
+            let mut message = mem::zeroed::<MSG>();
             while PeekMessageW(&mut message, self.handle, 0, 0, TRUE as u32) > 0 {
                 TranslateMessage(&message);
                 DispatchMessageW(&message);

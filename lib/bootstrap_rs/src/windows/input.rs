@@ -101,7 +101,7 @@ pub fn handle_raw_input(messages: &mut VecDeque<Message>, lParam: LPARAM) {
     }
 
     let raw = unsafe {
-        let mut raw = mem::uninitialized::<RAWINPUT>();
+        let mut raw = mem::zeroed::<RAWINPUT>();
         assert!(
             GetRawInputData(
                 lParam as HRAWINPUT,
@@ -114,7 +114,7 @@ pub fn handle_raw_input(messages: &mut VecDeque<Message>, lParam: LPARAM) {
         raw
     };
 
-    let raw_mouse = unsafe { raw.mouse() };
+    let raw_mouse = unsafe { raw.data.mouse() };
 
     assert!(raw.header.dwType == RIM_TYPEMOUSE);
     assert!(raw_mouse.usFlags == MOUSE_MOVE_RELATIVE);
