@@ -19,15 +19,17 @@ thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new());
 }
 
-
-static mut CONTEXT_MAP: OnceCell<Mutex<HashMap<FiberId, Context>>> = OnceCell::new();
-static mut EVENTS: OnceCell<Mutex<Vec<Event>>> = OnceCell::new();
-
-unsafe fn init_context_map() {
-    CONTEXT_MAP.set(Mutex::new(HashMap::with_capacity(1024))).unwrap();
+unsafe fn init_context_map() -> &'static Mutex<HashMap<FiberId, Context>> {
+    static mut CONTEXT_MAP: OnceCell<Mutex<HashMap<FiberId, Context>>> = OnceCell::new();
+    CONTEXT_MAP.get_or_init(|| {
+        Mutex::new(HashMap::with_capacity(1024))
+    })
 }
-unsafe fn init_events() {
-    EVENTS.set(Mutex::new(Vec::new())).unwrap();
+unsafe fn init_events() -> &'static Mutex<Vec<Event>> {
+    static mut EVENTS: OnceCell<Mutex<Vec<Event>>> = OnceCell::new();
+    EVENTS.get_or_init(|| {
+        Mutex::new(Vec::new())
+    })
 }
 
 /// Swaps the currently tracked execution context with the specified context.
@@ -50,7 +52,7 @@ pub fn switch_context(old: FiberId, new: FiberId) {
     });
 
     let mut context_map = unsafe {
-        CONTEXT_MAP.get().unwrap().lock()
+        init_context_map().lock()
     };
 
     let new_context = context_map.remove(&new).unwrap_or(Context::new());
@@ -82,7 +84,7 @@ pub fn switch_context(old: FiberId, new: FiberId) {
 /// Writes the events history to a string.
 pub fn write_events_to_string() -> String {
     let events = unsafe {
-        EVENTS.get().unwrap().lock()
+        init_events().lock()
     };
     serde_json::to_string(&*events).unwrap()
 }
@@ -159,7 +161,7 @@ struct Event {
 fn push_event(event: Event) {
     unsafe { init_events() };
     let mut events = unsafe {
-        EVENTS.get().unwrap().lock()
+        init_events().lock()
     };
     events.push(event);
 }

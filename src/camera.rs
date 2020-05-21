@@ -24,7 +24,7 @@ impl Camera {
         engine::send_message(EngineMessage::Camera(camera_data, transform.inner()));
 
         Camera {
-            data: unsafe { Unique::new(ptr).unwrap() },
+            data: Unique::new(ptr).unwrap(),
             _phantom: PhantomData,
         }
     }

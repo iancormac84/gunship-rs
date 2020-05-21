@@ -33,8 +33,8 @@ fn setup_scene() {
         resource::load_material("lib/polygon_rs/resources/materials/diffuse_flat.material");
 
     // Await the operations, suspending this fiber until they complete.
-    let mesh = async_mesh.await().unwrap();
-    let _material = async_material.await().unwrap();
+    let mesh = async_mesh.awaiting().unwrap();
+    let _material = async_material.awaiting().unwrap();
 
     let mut mesh_transform = Transform::new();
     let _mesh_renderer = MeshRenderer::new(&mesh, &mesh_transform);

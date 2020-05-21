@@ -1,10 +1,7 @@
 // Using `RawVec<T>`, could be replaced.
-#![feature(alloc)]
 #![feature(raw_vec_internals)]
 // Almost certainly going to be stabilized as-is, unlikely to break anything.
 #![feature(const_fn)]
-// The scheduler puts a `Condvar` and `Mutex` into some statics.
-#![feature(drop_types_in_const)]
 // Useful when sending raw pointers between threads, could be replaced.
 #![feature(ptr_internals)]
 
@@ -24,3 +21,11 @@ pub mod resource;
 pub mod scheduler;
 pub mod time;
 pub mod transform;
+
+pub mod math {
+    pub use polygon_math::*;
+}
+
+pub mod stopwatch {
+    pub use stopwatch::*;
+}

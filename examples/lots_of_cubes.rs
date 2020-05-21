@@ -28,7 +28,7 @@ fn main() {
 fn setup_scene() {
     // Start both async operations but don't await either, allowing both to run concurrently.
     let mesh = resource::load_mesh("lib/polygon_rs/resources/meshes/epps_head.obj")
-        .await()
+        .awaiting()
         .unwrap();
 
     DirectionalLight::new(

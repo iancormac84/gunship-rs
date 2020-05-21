@@ -56,7 +56,7 @@ impl EngineBuilder {
 
         let window = {
             let mut window = unsafe { mem::uninitialized() };
-            let mut out = unsafe { Unique::new(&mut window as *mut _) };
+            let out = Unique::new(&mut window as *mut _);
 
             let barrier = Arc::new(Barrier::new(2));
             let barrier_clone = barrier.clone();
@@ -140,7 +140,7 @@ impl EngineBuilder {
             debug_pause: false,
         });
 
-        INSTANCE.init(unsafe { Unique::new(&mut *engine).unwrap() });
+        INSTANCE.init(Unique::new(&mut *engine).unwrap());
 
         {
             let _s = Stopwatch::new("Scene setup");

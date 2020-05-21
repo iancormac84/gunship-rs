@@ -15,7 +15,7 @@ cell-extras = { git = "https://github.com/randomPoison/cell-extras" }
 crossbeam-channel = "*"
 fiber = { version = "0.1", path = "lib/fiber" }
 hash = { path = "lib/hash" }
-collaborate = { path = "E:/repositories/COLLABORATE" }
+parse_collada = { path = "lib/parse_collada" }
 once_cell = "*"
 parking_lot = "*"
 parse-obj = { version = "0.1", path = "lib/parse-obj" }
