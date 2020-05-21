@@ -1,7 +1,7 @@
 use cell_extras::atomic_init_cell::AtomicInitCell;
 use cell_extras::atomic_ref_cell::AtomicRefCell;
-use engine::{self, EngineMessage};
-use math::*;
+use crate::engine::{self, EngineMessage};
+use polygon_math::*;
 use polygon::light::*;
 use std::mem;
 use std::sync::Arc;

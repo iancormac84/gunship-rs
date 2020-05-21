@@ -66,7 +66,7 @@ pub enum ShaderError {
     /// TODO: Add notes on when this might happen and how to handle this error.
     CreateShaderError,
 
-    /// Indicates that an error occurred while compiling the the shader.
+    /// Indicates that an error occurred while compiling the shader.
     ///
     /// The inner string is the error log retrieved from OpenGL.
     CompileError(String)

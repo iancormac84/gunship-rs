@@ -11,10 +11,13 @@ no-draw = []
 [dependencies]
 bootstrap_rs = { path = "lib/bootstrap_rs" }
 #bootstrap_audio = { path = "lib/bootstrap_audio" }
-cell-extras = { git = "https://github.com/excaliburHisSheath/cell-extras" }
+cell-extras = { git = "https://github.com/randomPoison/cell-extras" }
+crossbeam-channel = "*"
 fiber = { version = "0.1", path = "lib/fiber" }
 hash = { path = "lib/hash" }
-#parse_collada = { path = "lib/parse_collada" }
+collaborate = { path = "E:/repositories/COLLABORATE" }
+once_cell = "*"
+parking_lot = "*"
 parse-obj = { version = "0.1", path = "lib/parse-obj" }
 polygon = { path = "lib/polygon_rs" }
 polygon_math = { path = "lib/polygon_math" }

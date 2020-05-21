@@ -23,21 +23,21 @@
 
 use cell_extras::AtomicInitCell;
 use fiber::{self, Fiber, FiberId};
-use std::boxed::FnBox;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::{self, Debug, Formatter};
 use std::marker::PhantomData;
 use std::mem;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc::{self, Receiver};
-use std::sync::{Condvar, Mutex, Once, ONCE_INIT};
+use crossbeam_channel::{bounded, self, Receiver};
+use once_cell::sync::OnceCell;
+use parking_lot::{Condvar, Mutex};
 use stopwatch;
 
 const DEFAULT_STACK_SIZE: usize = 64 * 1024;
 
 static CONDVAR: AtomicInitCell<Condvar> = AtomicInitCell::new();
 static INSTANCE: AtomicInitCell<Mutex<Scheduler>> = AtomicInitCell::new();
-static INSTANCE_INIT: Once = ONCE_INIT;
+static INSTANCE_INIT: OnceCell<()> = OnceCell::new();
 static WORK_COUNTER: AtomicUsize = AtomicUsize::new(1);
 
 /// Represents the result of a computation that may finish at some point in the future.
@@ -54,17 +54,17 @@ static WORK_COUNTER: AtomicUsize = AtomicUsize::new(1);
 pub struct Async<'a, T> {
     work: WorkId,
     receiver: Receiver<T>,
-    _phantom: PhantomData<&'a FnMut()>,
+    _phantom: PhantomData<&'a dyn FnMut()>,
 }
 
 impl<'a, T> Async<'a, T> {
     /// Suspend the current fiber until the async operation finishes.
-    pub fn await(self) -> T {
+    pub fn awaiting(self) -> T {
         let result = {
             let Async {
                 work, ref receiver, ..
             } = self;
-            work.await();
+            work.awaiting();
             receiver
                 .try_recv()
                 .expect("Failed to receive result of async computation")
@@ -86,7 +86,7 @@ impl<T> Async<'static, T> {
 
 impl<'a, T> Drop for Async<'a, T> {
     fn drop(&mut self) {
-        self.work.await();
+        self.work.awaiting();
     }
 }
 
@@ -98,7 +98,7 @@ impl WorkId {
     /// Suspends the current fiber until this work unit has completed.
     ///
     /// If the work unit has already finished then `await()` will return immediately.
-    pub fn await(self) {
+    pub fn awaiting(self) {
         if Scheduler::with(|scheduler| scheduler.add_dependency(self)) {
             suspend();
         }
@@ -141,18 +141,18 @@ where
     // borrowed data. In this case the lifetime parameter on the returned `Async` ensures that
     // the closure can't outlive the borrowed data, so we use this evil magic to convince the
     // compiler to allow us to box the closure.
-    unsafe fn erase_lifetime<'a, F>(func: F) -> Box<FnBox()>
+    unsafe fn erase_lifetime<'a, F>(func: F) -> Box<dyn FnOnce()>
     where
         F: FnOnce(),
         F: 'a + Send,
     {
         let boxed_proc = Box::new(func);
-        let proc_ptr = Box::into_raw(boxed_proc) as *mut FnBox();
+        let proc_ptr = Box::into_raw(boxed_proc) as *mut dyn FnOnce();
         Box::from_raw(::std::mem::transmute(proc_ptr))
     }
 
     // Create the channel that'll be used to send the result of the operation to the `Async` object.
-    let (sender, receiver) = mpsc::sync_channel(1);
+    let (sender, receiver) = bounded(1);
 
     let work_id = WorkId(WORK_COUNTER.fetch_add(1, Ordering::Relaxed));
 
@@ -211,16 +211,14 @@ fn fiber_routine() -> ! {
                 let mutex = INSTANCE.borrow();
                 let condvar = CONDVAR.borrow();
 
-                let _ = condvar
-                    .wait(mutex.lock().expect("Scheduler mutex was poisoned"))
-                    .expect("Scheduler mutex was poisoned");
+                let _ = condvar.wait(&mut mutex.lock());
             }
         }
     }
 }
 
 struct Work {
-    func: Box<FnBox()>,
+    func: Box<dyn FnOnce()>,
     id: WorkId,
 }
 
@@ -281,7 +279,7 @@ impl Scheduler {
     where
         F: FnOnce(&mut Scheduler) -> T,
     {
-        INSTANCE_INIT.call_once(|| {
+        INSTANCE_INIT.get_or_init(|| {
             let scheduler = Scheduler {
                 current_work: HashSet::new(),
                 work_map: HashMap::new(),
@@ -297,7 +295,7 @@ impl Scheduler {
 
         let instance = INSTANCE.borrow();
 
-        let mut guard = instance.lock().expect("Scheduler mutex was poisoned");
+        let mut guard = instance.lock();
         func(&mut *guard)
     }
 

@@ -1,8 +1,8 @@
-use engine::{self, EngineMessage};
-use resource::{Mesh, MeshId};
+use crate::engine::{self, EngineMessage};
+use crate::resource::{Mesh, MeshId};
 use std::marker::PhantomData;
 use std::mem;
-use transform::Transform;
+use crate::transform::Transform;
 
 #[derive(Debug)]
 pub struct MeshRenderer {

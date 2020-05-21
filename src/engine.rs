@@ -1,27 +1,27 @@
-use bootstrap::window::{Message, Window};
-use camera::CameraData;
+use bootstrap_rs::window::{Message, Window};
+use crate::camera::CameraData;
 use cell_extras::{AtomicInitCell, InitCell};
-use input::{self, Input, ScanCode};
-use light::LightInner;
-use mesh_renderer::MeshRendererData;
+use crate::input::{self, Input, ScanCode};
+use crate::light::LightInner;
+use crate::mesh_renderer::MeshRendererData;
 use polygon::anchor::Anchor;
 use polygon::camera::{Camera as RenderCamera, CameraId};
 use polygon::material::MaterialId as PolygonMaterialId;
 use polygon::mesh_instance::MeshInstance;
 use polygon::{GpuMesh, Renderer, RendererBuilder};
-use resource::{MaterialId, MeshId};
-use scheduler::{self, WorkId};
+use crate::resource::{MaterialId, MeshId};
+use crate::scheduler::{self, WorkId};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::mem;
 use std::ptr::{self, Unique};
-use std::sync::mpsc::{self, Receiver, Sender};
+use crossbeam_channel::{unbounded, self, Receiver, Sender};
 use std::sync::{Arc, Barrier};
 use std::thread;
 use std::time::{Duration, Instant};
 use stopwatch::{self, stats, PrettyDuration, Stopwatch};
-use transform::{TransformGraph, TransformInnerHandle};
+use crate::transform::{TransformGraph, TransformInnerHandle};
 
 #[derive(Debug)]
 pub struct EngineBuilder {
@@ -68,7 +68,7 @@ impl EngineBuilder {
 
                 // write data out to `window` without dropping the old (uninitialized) value.
                 unsafe {
-                    ptr::write(out.get_mut(), window);
+                    ptr::write(out.unwrap().as_mut(), window);
                 }
 
                 // Sync with
@@ -91,12 +91,12 @@ impl EngineBuilder {
         let mut renderer = RendererBuilder::new(&window).build();
 
         let mut material = renderer.default_material();
-        material.set_color("surface_color", ::math::Color::rgb(1.0, 0.0, 0.0));
-        material.set_color("surface_specular", ::math::Color::rgb(1.0, 1.0, 1.0));
+        material.set_color("surface_color", polygon_math::Color::rgb(1.0, 0.0, 0.0));
+        material.set_color("surface_specular", polygon_math::Color::rgb(1.0, 1.0, 1.0));
         material.set_f32("surface_shininess", 4.0);
         let default_material_id = renderer.register_shared_material(material);
 
-        let (sender, receiever) = mpsc::channel();
+        let (sender, receiever) = unbounded();
 
         // Init aysnc subsystem.
         scheduler::init_thread();
@@ -140,7 +140,7 @@ impl EngineBuilder {
             debug_pause: false,
         });
 
-        INSTANCE.init(unsafe { Unique::new(&mut *engine) });
+        INSTANCE.init(unsafe { Unique::new(&mut *engine).unwrap() });
 
         {
             let _s = Stopwatch::new("Scene setup");
@@ -174,7 +174,7 @@ impl EngineBuilder {
 pub struct Engine {
     window: Window,
 
-    renderer: Box<Renderer>,
+    renderer: Box<dyn Renderer>,
     channel: Receiver<EngineMessage>,
 
     mesh_map: HashMap<MeshId, GpuMesh>,
@@ -182,7 +182,7 @@ pub struct Engine {
     scene_graph: TransformGraph,
     lights: Vec<LightInner>,
     camera: Option<(Box<CameraData>, CameraId)>,
-    behaviors: Vec<Box<FnMut() + Send>>,
+    behaviors: Vec<Box<dyn FnMut() + Send>>,
     input: Input,
 
     default_material_id: PolygonMaterialId,
@@ -212,7 +212,7 @@ where
     F: FnOnce(&TransformGraph) -> T,
 {
     let engine = INSTANCE.borrow();
-    unsafe { func(&(***engine).scene_graph) }
+    unsafe { func(&(*engine).as_ref().scene_graph) }
 }
 
 // TODO: This shouln't be public, it's for engine-internal use.
@@ -221,7 +221,7 @@ where
     F: FnOnce(&Input) -> T,
 {
     let engine = INSTANCE.borrow();
-    unsafe { func(&(***engine).input) }
+    unsafe { func(&(*engine).as_ref().input) }
 }
 
 // TODO: This shouln't be public, it's for engine-internal use.
@@ -230,7 +230,7 @@ where
     F: FnOnce(&Window) -> T,
 {
     let engine = INSTANCE.borrow();
-    unsafe { func(&(***engine).window) }
+    unsafe { func(&(*engine).as_ref().window) }
 }
 
 pub enum EngineMessage {
@@ -240,7 +240,7 @@ pub enum EngineMessage {
     Material(MaterialId, ::polygon::material::MaterialSource),
     Mesh(MeshId, ::polygon::geometry::mesh::Mesh),
     MeshInstance(Box<MeshRendererData>, TransformInnerHandle),
-    Behavior(Box<FnMut() + Send>),
+    Behavior(Box<dyn FnMut() + Send>),
 }
 
 pub fn send_message(message: EngineMessage) {
@@ -262,7 +262,7 @@ where
 
 /// Suspends the calling worker until the engine main loop has finished.
 pub fn wait_for_quit() {
-    MAIN_LOOP.borrow().await();
+    MAIN_LOOP.borrow().awaiting();
 }
 
 fn main_loop(mut engine: Box<Engine>) {
@@ -307,13 +307,13 @@ fn main_loop(mut engine: Box<Engine>) {
 
                 // Start all behaviors...
                 for behavior in engine.behaviors.iter_mut() {
-                    let async = scheduler::start(&mut **behavior);
-                    pending.push(async);
+                    let async_bae = scheduler::start(&mut **behavior);
+                    pending.push(async_bae);
                 }
 
                 // ... then wait for each of them to finish.
-                for async in pending {
-                    async.await();
+                for async_bruh in pending {
+                    async_bruh.awaiting();
                 }
             } else {
                 let _s = Stopwatch::new("no game behaviors");

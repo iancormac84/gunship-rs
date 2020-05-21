@@ -1,4 +1,4 @@
-use collections::alloc::raw_vec::RawVec;
+use alloc::raw_vec::RawVec;
 use std::cell::UnsafeCell;
 use std::ops::{Deref, Index};
 use std::ptr;
@@ -84,7 +84,7 @@ impl<T> AtomicArray<T> {
     }
 
     pub fn capacity(&self) -> usize {
-        unsafe { &*self.buffer.get() }.cap()
+        unsafe { &*self.buffer.get() }.capacity()
     }
 
     pub fn as_slice(&self) -> &[T] {

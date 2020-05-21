@@ -90,7 +90,7 @@ use std::collections::hash_map::Entry;
 use std::f32::{MAX, MIN};
 use std::{mem, thread};
 use std::sync::{Arc, Mutex, Condvar, RwLock};
-use std::sync::mpsc::{self, Receiver, SyncSender};
+use crossbeam_channel::{self, Receiver, Sender};
 use std::thread::JoinHandle;
 
 use bootstrap::time::{Timer, TimeMark};
@@ -195,7 +195,7 @@ impl GridCollisionSystem {
             panic!("unsupported number of workers {}, only 1, 2, 4, or 8 supported", NUM_WORK_UNITS);
         }
 
-        let (sender, receiver) = mpsc::sync_channel(NUM_WORKERS);
+        let (sender, receiver) = bounded(NUM_WORKERS);
         let mut workers = Vec::new();
         for _ in 0..NUM_WORKERS {
             let thread_data = thread_data.clone();

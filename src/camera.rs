@@ -1,11 +1,11 @@
-use engine::{self, EngineMessage};
+use crate::engine::{self, EngineMessage};
 use std::f32::consts::PI;
 use std::fmt::{self, Debug, Formatter};
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::ptr::Unique;
-use transform::Transform;
+use crate::transform::Transform;
 
 pub struct Camera {
     data: Unique<CameraData>,
@@ -24,7 +24,7 @@ impl Camera {
         engine::send_message(EngineMessage::Camera(camera_data, transform.inner()));
 
         Camera {
-            data: unsafe { Unique::new(ptr) },
+            data: unsafe { Unique::new(ptr).unwrap() },
             _phantom: PhantomData,
         }
     }
@@ -38,7 +38,7 @@ unsafe impl Send for Camera {}
 
 impl Debug for Camera {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), fmt::Error> {
-        let data = unsafe { self.data.get() };
+        let data = unsafe { self.data.as_ref() };
 
         fmt.debug_struct("Camera")
             .field("fov", &data.fov)
@@ -53,13 +53,13 @@ impl Deref for Camera {
     type Target = CameraData;
 
     fn deref(&self) -> &CameraData {
-        unsafe { self.data.get() }
+        unsafe { self.data.as_ref() }
     }
 }
 
 impl DerefMut for Camera {
     fn deref_mut(&mut self) -> &mut CameraData {
-        unsafe { self.data.get_mut() }
+        unsafe { self.data.as_mut() }
     }
 }
 

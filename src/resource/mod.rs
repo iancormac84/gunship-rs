@@ -1,8 +1,8 @@
-use engine::{self, EngineMessage};
-use obj::{self, Obj};
+use crate::engine::{self, EngineMessage};
+use parse_obj::{self, Obj};
 use polygon::geometry::mesh::{BuildMeshError, MeshBuilder};
-use polygon::math::Vector2;
-use scheduler::{self, Async};
+use polygon_math::Vector2;
+use crate::scheduler::{self, Async};
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
@@ -46,7 +46,7 @@ where
 {
     scheduler::start(move || {
         let _s = Stopwatch::new("Load file text");
-        let bytes = load_file_bytes(path).await()?;
+        let bytes = load_file_bytes(path).awaiting()?;
         let result = String::from_utf8(bytes).map_err(|utf8_err| utf8_err.into());
         result
     })
@@ -89,11 +89,11 @@ where
         // Load mesh source and parse mesh data based on file type.
         let mesh_data = match extension {
             Some(ref ext) if ext == "dae" => {
-                let text = load_file_text(path).await()?;
+                let text = load_file_text(path).awaiting()?;
                 collada::load_resources(text)?
             }
             Some(ref ext) if ext == "obj" => {
-                let text = load_file_text(path).await()?;
+                let text = load_file_text(path).awaiting()?;
 
                 // Load mesh file and normalize indices for OpenGL.
                 let obj = Obj::from_str(&*text)?;
@@ -170,7 +170,7 @@ pub enum LoadMeshError {
     BuildMeshError(BuildMeshError),
     LoadTextError(LoadTextError),
     ParseColladaError(collada::Error),
-    ParseObjError(obj::Error),
+    ParseObjError(parse_obj::Error),
     UnsupportedFileType(String),
 }
 
@@ -192,8 +192,8 @@ impl From<collada::Error> for LoadMeshError {
     }
 }
 
-impl From<obj::Error> for LoadMeshError {
-    fn from(from: obj::Error) -> LoadMeshError {
+impl From<parse_obj::Error> for LoadMeshError {
+    fn from(from: parse_obj::Error) -> LoadMeshError {
         LoadMeshError::ParseObjError(from)
     }
 }
@@ -206,7 +206,7 @@ where
     scheduler::start(move || {
         let _s = Stopwatch::new("Load material");
         // Load and parse material data.
-        let text = load_file_text(path).await()?;
+        let text = load_file_text(path).awaiting()?;
         let material_source = ::polygon::material::MaterialSource::from_str(text)?;
 
         let material_id = MATERIAL_ID_COUNTER.fetch_add(1, Ordering::Relaxed);

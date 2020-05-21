@@ -3,9 +3,9 @@
 //! TODO: Document the transform "component", especially how there's no parent/child setup.
 
 use cell_extras::atomic_ref_cell::*;
-use collections::atomic_array::AtomicArray;
-use engine::{self, EngineMessage};
-use math::*;
+use crate::collections::atomic_array::AtomicArray;
+use crate::engine::{self, EngineMessage};
+use polygon_math::*;
 use polygon::anchor::AnchorId;
 use std::fmt::{self, Debug, Formatter};
 use std::mem;

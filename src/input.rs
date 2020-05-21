@@ -1,24 +1,23 @@
 use std::collections::HashSet;
 
-use bootstrap;
-use bootstrap::window::Message;
-use bootstrap::window::Message::*;
-use engine;
+use bootstrap_rs::window::Message;
+use bootstrap_rs::window::Message::*;
+use crate::engine;
 
-pub use bootstrap::input::ScanCode;
+pub use bootstrap_rs::input::ScanCode;
 
 pub const MAX_SUPPORTED_MOUSE_BUTTONS: usize = 5;
 
 pub fn set_cursor(visible: bool) {
-    bootstrap::input::set_cursor_visibility(visible);
+    bootstrap_rs::input::set_cursor_visibility(visible);
 }
 
 pub fn set_capture(capture: bool) {
     if capture {
         let (top, left, bottom, right) = engine::window(|window| window.get_rect());
-        bootstrap::input::set_cursor_bounds(top, left, bottom, right);
+        bootstrap_rs::input::set_cursor_bounds(top, left, bottom, right);
     } else {
-        bootstrap::input::clear_cursor_bounds();
+        bootstrap_rs::input::clear_cursor_bounds();
     }
 }
 

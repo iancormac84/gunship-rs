@@ -1,11 +1,8 @@
 /// Implements the logic behind converting COLLADA documents to polygon-rs meshes.
-extern crate parse_collada as collada;
+use collaborate::v1_4::{Collada, GeometricElement, Primitive};
 
-pub use self::collada::{
-    AnyUri, ArrayElement, Collada, GeometricElement, Geometry, Node, PrimitiveElements,
-    UriFragment, VisualScene,
-};
-use math::*;
+//pub use collada::{ArrayElement, Geometry, Node, PrimitiveElements, UriFragment, VisualScene};
+use polygon_math::*;
 use polygon::geometry::mesh::*;
 
 #[derive(Debug)]
@@ -22,7 +19,7 @@ pub enum Error {
 
     /// Indicates an error in loading or parsing the original collada document (i.e. the error
     /// ocurred within the parse-collada library).
-    ParseColladaError(collada::Error),
+    ParseColladaError(collaborate::Error),
 
     /// Indicates that there was an input with the "NORMAL" semantic but the associated source
     /// was missing.
@@ -63,8 +60,8 @@ pub enum Error {
     UnsupportedSourceData,
 }
 
-impl From<collada::Error> for Error {
-    fn from(from: collada::Error) -> Error {
+impl From<collaborate::Error> for Error {
+    fn from(from: collaborate::Error) -> Error {
         Error::ParseColladaError(from)
     }
 }
@@ -79,11 +76,12 @@ pub enum VertexSemantic {
 
 /// Loads all resources from a COLLADA document and adds them to the resource manager.
 pub fn load_resources<T: Into<String>>(source: T) -> Result<Mesh> {
-    let collada_data = Collada::parse(source)?;
+    let collada_data = Collada::from_str(&source.into())?;
 
-    // Load all meshes from the document and add them to the resource manager.
-    if let Some(library_geometries) = collada_data.library_geometries {
-        for geometry in library_geometries.geometry {
+    for library in collada_data.libraries() {
+        // Load all meshes from the document and add them to the resource manager.
+    if let Some(library_geometries) = library.as_library_geometries() {
+        for geometry in library_geometries.geometries() {
             // // Retrieve the id for the geometry.
             // // TODO: Generate an id for the geometry if it doesn't already have one.
             // let id = match geometry.id {
@@ -105,11 +103,13 @@ pub fn load_resources<T: Into<String>>(source: T) -> Result<Mesh> {
         }
     }
 
+    }
+
     unimplemented!();
 }
 
-fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
-    if mesh.primitive_elements.len() > 1 {
+fn collada_mesh_to_mesh(mesh: &collaborate::v1_4::Mesh) -> Result<Mesh> {
+    if mesh.primitives.len() > 1 {
         println!("WARNING: Mesh is composed of more than one geometric primitive, which is not currently supported, only part of the mesh will be loaded");
     }
 
@@ -117,12 +117,12 @@ fn collada_mesh_to_mesh(mesh: &collada::Mesh) -> Result<Mesh> {
     // TODO: Handle all primitive elements in the mesh, not just one. This is dependent on polygon
     // being able to support submeshes.
     let primitive = mesh
-        .primitive_elements
+        .primitives
         .first()
         .ok_or(Error::MissingPrimitiveElement)?;
 
     let triangles = match *primitive {
-        PrimitiveElements::Triangles(ref triangles) => triangles,
+        Primitive::Triangles(ref triangles) => triangles,
         _ => return Err(Error::UnsupportedPrimitiveType),
     };
 
