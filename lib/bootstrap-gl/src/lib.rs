@@ -2426,7 +2426,7 @@ gl_proc!(glViewport:
 
 #[cfg(target_os = "windows")]
 pub mod wgl {
-    pub use platform::{
+    pub use crate::platform::{
         create_context_attribs,
         get_extension_string,
         get_swap_interval,

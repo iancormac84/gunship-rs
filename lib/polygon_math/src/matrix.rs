@@ -208,7 +208,7 @@ impl Mul<Matrix4> for Matrix4 {
     type Output = Matrix4;
 
     fn mul(self, other: Matrix4) -> Matrix4 {
-        let mut result: Matrix4 = unsafe { ::std::mem::uninitialized() };
+        let mut result: Matrix4 = unsafe { std::mem::zeroed() };
 
         // for row in 0..4 {
         //     for col in 0..4 {
@@ -421,7 +421,7 @@ impl Mul for Matrix3 {
     type Output = Matrix3;
 
     fn mul(self, other: Matrix3) -> Matrix3 {
-        let mut result: Matrix3 = unsafe { ::std::mem::uninitialized() };
+        let mut result: Matrix3 = unsafe { std::mem::zeroed() };
 
         for row in 0..3 {
             for col in 0..3 {

@@ -1,8 +1,14 @@
 use std::{mem, ptr};
-use winapi::{shared::{minwindef::TRUE, windef::{HDC, HGLRC}}, um::{errhandlingapi::GetLastError, libloaderapi::{GetProcAddress, LoadLibraryA}, wingdi::{SwapBuffers, wglCreateContext, wglGetProcAddress, wglMakeCurrent, wglGetCurrentDC, wglDeleteContext, wglGetCurrentContext}, winuser::GetActiveWindow}};
+use winapi::{
+    shared::minwindef::TRUE,
+    um::{errhandlingapi::GetLastError,
+        libloaderapi::{GetProcAddress, LoadLibraryA},
+        wingdi::{SwapBuffers, wglCreateContext, wglGetProcAddress, wglMakeCurrent, wglGetCurrentDC, wglDeleteContext, wglGetCurrentContext},
+        winuser::GetActiveWindow}
+};
 
-pub type DeviceContext = HDC;
-pub type Context = (HDC, HGLRC);
+pub type DeviceContext = winapi::shared::windef::HDC;
+pub type Context = (winapi::shared::windef::HDC, winapi::shared::windef::HGLRC);
 
 pub unsafe fn create_context(device_context: DeviceContext) -> Option<Context> {
     let tmp_context = wglCreateContext(device_context);
@@ -25,7 +31,7 @@ pub unsafe fn create_context(device_context: DeviceContext) -> Option<Context> {
         make_current((device_context, render_context));
 
         // TODO: Don't do this in context creation.
-        if set_swap_interval(0) != ::types::Boolean::True {
+        if set_swap_interval(0) != crate::types::Boolean::True {
             println!("WARNING: Failed to set swap interval of setting swap interval");
         }
 
@@ -64,12 +70,12 @@ pub unsafe fn load_proc(proc_name: &str) -> Option<extern "system" fn()> {
     }
 
     if ptr.is_null() {
-        let actual_dc = opengl32::wglGetCurrentDC();
-        let actual_context = opengl32::wglGetCurrentContext();
+        let actual_dc = wglGetCurrentDC();
+        let actual_context = wglGetCurrentContext();
         println!(
             "pointer for {} was null, last error: 0x{:X}, active dc: {:?}, active context: {:?}",
             proc_name,
-            kernel32::GetLastError(),
+            GetLastError(),
             actual_dc,
             actual_context,
         );
@@ -84,12 +90,12 @@ pub unsafe fn swap_buffers(context: Context) {
     let (device_context, _) = context;
     if SwapBuffers(device_context) != TRUE {
         let (device_context, render_context) = context;
-        let hwnd = user32::GetActiveWindow();
+        let hwnd = GetActiveWindow();
         panic!(
             "Swap buffers failed, dc: {:?}, context: {:?} last error: 0x:{:X}, hwnd: {:?}",
             device_context,
             render_context,
-            kernel32::GetLastError(),
+            GetLastError(),
             hwnd,
         );
     }
@@ -122,17 +128,17 @@ pub unsafe fn clear_current() {
 }
 
 gl_proc!(wglGetExtensionsStringARB:
-    fn get_extension_string(hdc: ::platform::winapi::HDC) -> *const u8);
+    fn get_extension_string(hdc: winapi::shared::windef::HDC) -> *const u8);
 
 gl_proc!(wglCreateContextAttribsARB:
     fn create_context_attribs(
-        hdc: ::platform::winapi::HDC,
-        share_context: ::platform::winapi::HGLRC,
+        hdc: winapi::shared::windef::HDC,
+        share_context: winapi::shared::windef::HGLRC,
         attrib_list: *const i32
-    ) -> ::platform::winapi::HGLRC);
+    ) -> winapi::shared::windef::HGLRC);
 
 gl_proc!(wglGetSwapIntervalEXT:
     fn get_swap_interval() -> i32);
 
 gl_proc!(wglSwapIntervalEXT:
-    fn set_swap_interval(interval: i32) -> ::types::Boolean);
+    fn set_swap_interval(interval: i32) -> crate::types::Boolean);

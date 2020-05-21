@@ -33,7 +33,7 @@ impl Obj {
 
     pub fn from_str(file_text: &str) -> Result<Obj, Error> {
         /// Pulls the next token and parses it as an `f32`.
-        fn pull_f32(tokens: &mut Iterator<Item=&str>) -> Result<f32, Error> {
+        fn pull_f32(tokens: &mut dyn Iterator<Item=&str>) -> Result<f32, Error> {
             let token = tokens.next().ok_or(Error::MissingElement)?;
             let value = f32::from_str(token)?;
             Ok(value)
@@ -43,7 +43,7 @@ impl Obj {
         ///
         /// Returns `Ok(None)` if no tokens are left in `tokens`, but will treat an empty token as
         /// an error.
-        fn pull_option_f32(tokens: &mut Iterator<Item=&str>) -> Result<Option<f32>, Error> {
+        fn pull_option_f32(tokens: &mut dyn Iterator<Item=&str>) -> Result<Option<f32>, Error> {
             match tokens.next() {
                 Some(token) => {
                     let value = f32::from_str(token)?;
@@ -56,7 +56,7 @@ impl Obj {
         }
 
         /// Parses the next token as 'usize', returning empty tokens as `None`.
-        fn pull_option_usize(tokens: &mut Iterator<Item=&str>) -> Result<Option<usize>, Error> {
+        fn pull_option_usize(tokens: &mut dyn Iterator<Item=&str>) -> Result<Option<usize>, Error> {
             let token = tokens.next().ok_or(Error::MissingElement)?;
             if token == "" {
                 Ok(None)
@@ -236,8 +236,6 @@ impl Obj {
     ///
     /// Useful for sending vertex position data to the gpu.
     pub fn raw_positions(&self) -> &[f32] {
-        use std::slice;
-
         let len = self.positions.len() * 4;
         let ptr = self.positions.as_ptr() as *const _;
 
@@ -262,8 +260,6 @@ impl Obj {
     ///
     /// Usefule for sending texcoord data to the gpu.
     pub fn raw_texcoords(&self) -> &[f32] {
-        use std::slice;
-
         let len = self.texcoords.len() * 3;
         let ptr = self.texcoords.as_ptr() as *const _;
 
@@ -286,8 +282,6 @@ impl Obj {
     ///
     /// Useful for sending vertex normal data to the gpu.
     pub fn raw_normals(&self) -> &[f32] {
-        use std::slice;
-
         let len = self.normals.len() * 3;
         let ptr = self.normals.as_ptr() as *const _;
 
@@ -380,13 +374,13 @@ impl<'a> Iterator for Face<'a> {
                     self
                     .texcoord_indices
                     .as_mut()
-                    .and_then(|mut texcoord_indices| texcoord_indices.next())
+                    .and_then(|texcoord_indices| texcoord_indices.next())
                     .map(|&index| self.obj.texcoords[index]);
                 let norm =
                     self
                     .normal_indices
                     .as_mut()
-                    .and_then(|mut normal_indices| normal_indices.next())
+                    .and_then(|normal_indices| normal_indices.next())
                     .map(|&index| self.obj.normals[index]);
                 (pos, tex, norm)
             })

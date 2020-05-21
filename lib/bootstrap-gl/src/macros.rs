@@ -21,7 +21,7 @@ macro_rules! gl_proc {
 
         pub mod $fn_name {
             #[allow(unused_imports)]
-            use types::*;
+            use crate::types::*;
 
             static mut PROC_PTR: Option<ProcType> = None;
 

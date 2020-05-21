@@ -454,8 +454,6 @@ impl Vector2 {
     }
 
     pub fn as_ref(vectors: &[Vector2]) -> &[f32] {
-        use std::slice;
-
         unsafe {
             slice::from_raw_parts(
                 vectors.as_ptr() as *const f32,
@@ -464,8 +462,6 @@ impl Vector2 {
     }
 
     pub fn slice_from_f32_slice(data: &[f32]) -> &[Vector2] {
-        use std::slice;
-
         assert!(data.len() % 2 == 0, "Slice must have an even number of elements to be converted to a slice of Vector2");
         unsafe {
             slice::from_raw_parts(
