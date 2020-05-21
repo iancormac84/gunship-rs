@@ -1,12 +1,8 @@
-extern crate user32;
-extern crate winapi;
-
-use self::winapi::*;
-
 use gl;
+use winapi::{shared::windef::HWND, um::winuser::{GetActiveWindow, GetDC}};
 
 pub fn find_device_context() -> Option<gl::DeviceContext> {
-    let hwnd = unsafe { user32::GetActiveWindow() };
+    let hwnd = unsafe { GetActiveWindow() };
 
     if hwnd.is_null() {
         return None;
@@ -16,7 +12,7 @@ pub fn find_device_context() -> Option<gl::DeviceContext> {
 }
 
 pub fn device_context_from_window_handle(window_handle: HWND) -> Option<gl::DeviceContext> {
-    let device_context = unsafe { user32::GetDC(window_handle) };
+    let device_context = unsafe { GetDC(window_handle) };
     if device_context.is_null() {
         None
     } else {

@@ -84,10 +84,6 @@ unsafe impl Sync for FiberId {}
 #[derive(Debug)]
 pub struct Fiber(PlatformId);
 
-/// A global cache mapping threads to their currently running fiber.
-///
-/// This is used by `Fiber::current()` on some platforms to keep track of which fiber is active
-/// on which thread.
 thread_local! {
     static PREV: Cell<Option<PlatformId>> = Cell::new(None);
     static CURRENT: Cell<Option<PlatformId>> = Cell::new(None);

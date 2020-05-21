@@ -30,8 +30,6 @@ impl Context {
             message: *const u8,
             _user_param: *mut ()
         ) {
-            use std::ffi::CStr;
-
             let message = unsafe { CStr::from_ptr(message as *const _) }.to_string_lossy();
 
             println!(
@@ -54,7 +52,7 @@ impl Context {
                 .ok_or(Error::UnableToCreateRenderContext)?;
 
             {
-                let _guard = ::context::ContextGuard::new(context);
+                let _guard = crate::context::ContextGuard::new(context);
 
                 gl::enable(ServerCapability::DebugOutput);
                 gl::debug_message_callback(Some(debug_callback), ptr::null_mut());
@@ -104,12 +102,12 @@ impl Context {
 
     /// TODO: Take clear mask (and values) as parameters.
     pub fn clear(&self) {
-        let _guard = ::context::ContextGuard::new(self.raw);
+        let _guard = crate::context::ContextGuard::new(self.raw);
         unsafe { gl::clear(ClearBufferMask::Color | ClearBufferMask::Depth); }
     }
 
     pub fn swap_buffers(&self) {
-        let _guard = ::context::ContextGuard::new(self.raw);
+        let _guard = crate::context::ContextGuard::new(self.raw);
         unsafe { gl::platform::swap_buffers(self.raw); }
     }
 

@@ -1,7 +1,7 @@
-use ::{Fiber, PREV};
+use crate::{Fiber, PREV};
 use std::mem;
 use std::ptr;
-use winapi::um::winbase::{ConvertThreadToFiber, CreateFiber, SwitchToFiber};
+use winapi::{shared::minwindef::LPVOID, um::winbase::{ConvertThreadToFiber, CreateFiber, SwitchToFiber}};
 
 pub type PlatformId = LPVOID;
 
@@ -19,7 +19,7 @@ pub fn create_fiber(stack_size: usize, func: fn(Fiber) -> !) -> PlatformId
 {
     let fiber = unsafe {
         CreateFiber(
-            stack_size as u32,
+            stack_size,
             Some(fiber_proc),
             func as LPVOID,
         )

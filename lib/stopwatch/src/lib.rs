@@ -1,9 +1,5 @@
 #![feature(const_fn)]
-#![feature(drop_types_in_const)]
-#![feature(proc_macro)]
 
-#[macro_use]
-extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
@@ -28,10 +24,9 @@ thread_local! {
     static CONTEXT: RefCell<Context> = RefCell::new(Context::new());
 }
 
-lazy_static! {
-    static ref CONTEXT_MAP: Mutex<HashMap<FiberId, Context>> = Mutex::new(HashMap::with_capacity(1024));
-    static ref EVENTS: Mutex<Vec<Event>> = Mutex::new(Vec::new());
-}
+
+static mut CONTEXT_MAP: OnceCell<Mutex<HashMap<FiberId, Context>>> = OnceCell::new(Mutex::new(HashMap::with_capacity(1024)));
+static mut EVENTS: OnceCell<Mutex<Vec<Event>>> = OnceCell::new(Mutex::new(Vec::new()));
 
 /// Swaps the currently tracked execution context with the specified context.
 pub fn switch_context(old: FiberId, new: FiberId) {

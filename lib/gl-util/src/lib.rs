@@ -92,7 +92,7 @@ impl VertexArray {
 
         let (vertex_buffer_name, vertex_array_name) = unsafe {
             let mut context = context_inner.borrow_mut();
-            let _guard = ::context::ContextGuard::new(context.raw());
+            let _guard = crate::context::ContextGuard::new(context.raw());
 
             // Create the VAO and VBO.
             let vertex_array = gl::gen_vertex_array().expect("Failed to create vertex array object");
@@ -130,7 +130,7 @@ impl VertexArray {
 
         let index_buffer_name = unsafe {
             let context = vertex_array.context.borrow_mut();
-            let _guard = ::context::ContextGuard::new(context.raw());
+            let _guard = crate::context::ContextGuard::new(context.raw());
 
             let buffer_name = gl::gen_buffer().expect("Failed to generate buffer object");
             gl::bind_buffer(BufferTarget::ElementArray, buffer_name);
@@ -170,7 +170,7 @@ impl VertexArray {
 
         unsafe {
             let mut context = self.context.borrow_mut();
-            let _guard = ::context::ContextGuard::new(context.raw());
+            let _guard = crate::context::ContextGuard::new(context.raw());
             context.bind_vertex_array(self.vertex_array_name);
 
             gl::enable_vertex_attrib_array(attrib_location);
@@ -189,7 +189,7 @@ impl VertexArray {
 impl Drop for VertexArray {
     fn drop(&mut self) {
         let mut context = self.context.borrow_mut();
-        let _guard = ::context::ContextGuard::new(context.raw());
+        let _guard = crate::context::ContextGuard::new(context.raw());
         let buffers = &mut [self.vertex_buffer_name, self.index_buffer.clone().map_or(BufferName::null(), |buf| buf.name)];
         unsafe {
             gl::delete_vertex_arrays(1, &mut self.vertex_array_name);
@@ -319,7 +319,7 @@ impl<'a> DrawBuilder<'a> {
 
     pub fn draw(&mut self) {
         let mut context = self.context.borrow_mut();
-        let _guard = ::context::ContextGuard::new(context.raw());
+        let _guard = crate::context::ContextGuard::new(context.raw());
 
         context.polygon_mode(self.polygon_mode.unwrap_or_default());
         context.use_program(self.program.map(Program::inner));
