@@ -1,5 +1,5 @@
-use anchor::AnchorId;
-use math::*;
+use crate::anchor::AnchorId;
+use polygon_math::*;
 
 /// A camera in the scene.
 #[derive(Debug, Clone)]
@@ -17,10 +17,10 @@ impl Camera
 {
     pub fn new(fov: f32, aspect: f32, near: f32, far: f32) -> Camera {
         Camera {
-            fov: fov,
-            aspect: aspect,
-            near: near,
-            far: far,
+            fov,
+            aspect,
+            near,
+            far,
 
             anchor: None,
         }

@@ -67,11 +67,11 @@
 //! - `light_direction_view` - The normalized direction in view space of the current light (only
 //!   for directional lights).
 
-use math::*;
-use shader::Shader;
+use polygon_math::*;
+use crate::shader::Shader;
 use std::collections::HashMap;
 use std::collections::hash_map::Iter as HashMapIter;
-use texture::GpuTexture;
+use crate::texture::GpuTexture;
 
 pub use polygon_material::material_source::{Error as MaterialSourceError, MaterialSource};
 

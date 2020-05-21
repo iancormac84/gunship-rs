@@ -1,14 +1,14 @@
 pub extern crate gl_util;
 
-use {BuildMaterialError, Counter, GpuMesh, Renderer};
-use anchor::*;
-use bootstrap::window::Window;
-use camera::*;
-use geometry::mesh::{Mesh, VertexAttribute};
-use light::*;
-use material::*;
-use mesh_instance::*;
-use math::*;
+use crate::{BuildMaterialError, Counter, GpuMesh, Renderer};
+use crate::anchor::*;
+use bootstrap_rs::window::Window;
+use crate::camera::*;
+use crate::geometry::mesh::{Mesh, VertexAttribute};
+use crate::light::*;
+use crate::material::*;
+use crate::mesh_instance::*;
+use polygon_math::*;
 use self::gl_util::*;
 use self::gl_util::context::{Context, Error as ContextError};
 use self::gl_util::shader::*;
@@ -18,11 +18,11 @@ use self::gl_util::texture::{
     TextureFormat,
     TextureInternalFormat,
 };
-use shader::Shader;
+use crate::shader::Shader;
 use std::collections::HashMap;
 use std::str;
 use stopwatch::Stopwatch;
-use texture::*;
+use crate::texture::*;
 
 static DEFAULT_SHADER_BYTES: &'static [u8] = include_bytes!("../../resources/materials/diffuse_lit.material");
 

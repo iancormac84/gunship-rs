@@ -1,6 +1,6 @@
-use lexer::{Lexer, Error as TokenError};
-use material_source::{MaterialSource, ProgramSource, PropertySource, PropertyType};
-use token::*;
+use crate::lexer::{Lexer, Error as TokenError};
+use crate::material_source::{MaterialSource, ProgramSource, PropertySource, PropertyType};
+use crate::token::*;
 
 #[derive(Debug)]
 pub struct Parser<'a> {

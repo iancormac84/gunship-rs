@@ -1,10 +1,3 @@
-extern crate bootstrap_rs as bootstrap;
-extern crate parse_bmp;
-extern crate polygon_material;
-extern crate stopwatch;
-
-pub extern crate polygon_math as math;
-
 // NOTE: This is a "standard" workaround for Rust's nasty macro visibility rules. Once the new
 // macro system arrives this can be removed.
 #[macro_use]
@@ -21,12 +14,12 @@ pub mod shader;
 pub mod texture;
 
 use anchor::*;
-use bootstrap::window::Window;
+use bootstrap_rs::window::Window;
 use camera::*;
 use geometry::mesh::Mesh;
 use light::*;
 use material::*;
-use math::Color;
+use polygon_math::Color;
 use mesh_instance::*;
 use texture::*;
 
@@ -107,14 +100,14 @@ impl<'a> RendererBuilder<'a> {
     /// Creates a new builder object.
     pub fn new(window: &Window) -> RendererBuilder {
         RendererBuilder {
-            window: window,
+            window,
         }
     }
 
     /// Constructs a new renderer using the options set in the builder.
-    pub fn build(&mut self) -> Box<Renderer> {
+    pub fn build(&mut self) -> Box<dyn Renderer> {
         let renderer = gl::GlRender::new(self.window).unwrap();
-        Box::new(renderer) as Box<Renderer>
+        Box::new(renderer) as Box<dyn Renderer>
     }
 }
 

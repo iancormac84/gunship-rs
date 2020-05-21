@@ -1,4 +1,4 @@
-use parser::{Parser, Error as ParseError};
+use crate::parser::{Parser, Error as ParseError};
 use std::fs::File;
 use std::io::Error as IoError;
 use std::io::prelude::*;

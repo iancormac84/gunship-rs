@@ -1,4 +1,4 @@
-use math::*;
+use polygon_math::*;
 
 pub type MeshIndex = u32;
 
@@ -52,7 +52,7 @@ pub struct Vertex {
 impl Vertex {
     pub fn new(position: Point) -> Vertex {
         Vertex {
-            position: position,
+            position,
             normal: None,
             texcoord: Vec::new(),
         }
@@ -247,7 +247,7 @@ impl MeshBuilder {
 
         // By our powers combined! We are! A mesh.
         Ok(Mesh {
-            vertex_data: vertex_data,
+            vertex_data,
             indices: self.indices,
 
             position: position_attrib,

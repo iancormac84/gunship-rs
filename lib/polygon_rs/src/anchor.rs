@@ -1,4 +1,4 @@
-use math::*;
+use polygon_math::*;
 
 #[derive(Debug)]
 pub struct Anchor {

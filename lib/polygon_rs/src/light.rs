@@ -1,5 +1,5 @@
-use anchor::AnchorId;
-use math::{Color, Vector3};
+use crate::anchor::AnchorId;
+use polygon_math::{Color, Vector3};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Light {
@@ -13,8 +13,8 @@ impl Light {
     pub fn point(radius: f32, strength: f32, color: Color) -> Light {
         Light {
             data: LightData::Point { radius: radius },
-            color: color,
-            strength: strength,
+            color,
+            strength,
             anchor: None,
         }
     }
@@ -22,8 +22,8 @@ impl Light {
     pub fn directional(direction: Vector3, strength: f32, color: Color) -> Light {
         Light {
             data: LightData::Directional { direction: direction.normalized() },
-            color: color,
-            strength: strength,
+            color,
+            strength,
             anchor: None,
         }
     }

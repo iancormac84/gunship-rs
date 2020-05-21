@@ -54,7 +54,7 @@ impl Texture2d {
     }
 
     /// Returns the height of the texture.
-    pub fn height(&self) -> usize() {
+    pub fn height(&self) -> usize {
         self.height
     }
 

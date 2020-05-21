@@ -2,6 +2,7 @@
 name = "loader"
 version = "0.0.0"
 authors = ["David LeGare <excaliburhissheath@gmail.com>"]
+edition = "2018"
 
 [lib]
 name = "loader"

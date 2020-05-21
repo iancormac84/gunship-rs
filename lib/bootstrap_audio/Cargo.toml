@@ -2,6 +2,7 @@
 name = "bootstrap_audio"
 version = "0.0.1"
 authors = ["David LeGare <excaliburhissheath@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 libc = "*"

@@ -1,8 +1,8 @@
 [package]
-
 name = "gunship"
 version = "0.1.0"
 authors = ["David LeGare <excaliburhissheath@gmail.com>"]
+edition = "2018"
 
 [features]
 timing = []
@@ -14,7 +14,6 @@ bootstrap_rs = { path = "lib/bootstrap_rs" }
 cell-extras = { git = "https://github.com/excaliburHisSheath/cell-extras" }
 fiber = { version = "0.1", path = "lib/fiber" }
 hash = { path = "lib/hash" }
-lazy_static = "0.2.1"
 #parse_collada = { path = "lib/parse_collada" }
 parse-obj = { version = "0.1", path = "lib/parse-obj" }
 polygon = { path = "lib/polygon_rs" }

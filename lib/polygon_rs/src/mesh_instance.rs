@@ -7,9 +7,9 @@
 //! * Allowing meshes to be displayed numerous times in the same scene.
 //! * Associating materials with meshes in the scene.
 
-use {GpuMesh};
-use anchor::AnchorId;
-use material::*;
+use crate::GpuMesh;
+use crate::anchor::AnchorId;
+use crate::material::*;
 
 /// Represents an instance of a mesh in the scene.
 ///
@@ -27,7 +27,7 @@ impl MeshInstance {
     /// Creates a new mesh instance sharing the specified material.
     pub fn with_shared_material(mesh: GpuMesh, material: MaterialId) -> MeshInstance {
         MeshInstance {
-            mesh: mesh,
+            mesh,
             material: MaterialType::Shared(material),
             anchor: None,
         }
