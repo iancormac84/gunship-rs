@@ -1,6 +1,6 @@
-use bootstrap::window::Window;
-use gl;
-use gl::*;
+use bootstrap_rs::window::Window;
+use bootstrap_gl;
+use bootstrap_gl::*;
 use std::cell::RefCell;
 use std::ffi::CStr;
 use std::ptr;
@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Context {
-    raw: gl::Context,
+    raw: bootstrap_gl::Context,
     inner: Rc<RefCell<ContextInner>>,
 }
 
@@ -20,7 +20,7 @@ impl Context {
     }
 
     /// Initializes global OpenGL state and creates the OpenGL context needed to perform rendering.
-    fn from_device_context(device_context: gl::DeviceContext) -> Result<Context, Error> {
+    fn from_device_context(device_context: bootstrap_gl::DeviceContext) -> Result<Context, Error> {
         pub extern "system" fn debug_callback(
             source: DebugSource,
             message_type: DebugType,
@@ -48,19 +48,19 @@ impl Context {
 
         unsafe {
             let context =
-                gl::create_context(device_context)
+                bootstrap_gl::create_context(device_context)
                 .ok_or(Error::UnableToCreateRenderContext)?;
 
             {
                 let _guard = crate::context::ContextGuard::new(context);
 
-                gl::enable(ServerCapability::DebugOutput);
-                gl::debug_message_callback(Some(debug_callback), ptr::null_mut());
+                bootstrap_gl::enable(ServerCapability::DebugOutput);
+                bootstrap_gl::debug_message_callback(Some(debug_callback), ptr::null_mut());
 
-                let vendor = CStr::from_ptr(gl::get_string(StringName::Vendor)).to_str().unwrap();
-                let renderer = CStr::from_ptr(gl::get_string(StringName::Renderer)).to_str().unwrap();
-                let version = CStr::from_ptr(gl::get_string(StringName::Version)).to_str().unwrap();
-                let glsl_version = CStr::from_ptr(gl::get_string(StringName::ShadingLanguageVersion)).to_str().unwrap();
+                let vendor = CStr::from_ptr(bootstrap_gl::get_string(StringName::Vendor)).to_str().unwrap();
+                let renderer = CStr::from_ptr(bootstrap_gl::get_string(StringName::Renderer)).to_str().unwrap();
+                let version = CStr::from_ptr(bootstrap_gl::get_string(StringName::Version)).to_str().unwrap();
+                let glsl_version = CStr::from_ptr(bootstrap_gl::get_string(StringName::ShadingLanguageVersion)).to_str().unwrap();
 
                 println!("OpenGL Information:");
                 println!("\tvendor: {}", vendor);
@@ -69,10 +69,10 @@ impl Context {
                 println!("\tglsl version: {}", glsl_version);
 
                 // Load a bunch of proc pointers for funsies.
-                gl::get_attrib_location::load();
-                gl::gen_vertex_arrays::load();
-                gl::enable(ServerCapability::FramebufferSrgb);
-                gl::enable(ServerCapability::Blend);
+                bootstrap_gl::get_attrib_location::load();
+                bootstrap_gl::gen_vertex_arrays::load();
+                bootstrap_gl::enable(ServerCapability::FramebufferSrgb);
+                bootstrap_gl::enable(ServerCapability::Blend);
             }
 
             let inner = Rc::new(RefCell::new(ContextInner {
@@ -103,15 +103,15 @@ impl Context {
     /// TODO: Take clear mask (and values) as parameters.
     pub fn clear(&self) {
         let _guard = crate::context::ContextGuard::new(self.raw);
-        unsafe { gl::clear(ClearBufferMask::Color | ClearBufferMask::Depth); }
+        unsafe { bootstrap_gl::clear(ClearBufferMask::Color | ClearBufferMask::Depth); }
     }
 
     pub fn swap_buffers(&self) {
         let _guard = crate::context::ContextGuard::new(self.raw);
-        unsafe { gl::platform::swap_buffers(self.raw); }
+        unsafe { bootstrap_gl::platform::swap_buffers(self.raw); }
     }
 
-    pub(crate) fn raw(&self) -> gl::Context {
+    pub(crate) fn raw(&self) -> bootstrap_gl::Context {
         self.raw
     }
 
@@ -122,7 +122,7 @@ impl Context {
 
 #[derive(Debug)]
 pub(crate) struct ContextInner {
-    raw: gl::Context,
+    raw: bootstrap_gl::Context,
 
     server_srgb_enabled: bool,
     server_cull_enabled: bool,
@@ -140,27 +140,27 @@ pub(crate) struct ContextInner {
 }
 
 impl ContextInner {
-    pub(crate) fn raw(&self) -> gl::Context {
+    pub(crate) fn raw(&self) -> bootstrap_gl::Context {
         self.raw
     }
 
     pub(crate) fn bind_vertex_array(&mut self, vertex_array_name: VertexArrayName) {
         if Some(vertex_array_name) != self.bound_vertex_array {
-            unsafe { gl::bind_vertex_array(vertex_array_name); }
+            unsafe { bootstrap_gl::bind_vertex_array(vertex_array_name); }
             self.bound_vertex_array = Some(vertex_array_name);
         }
     }
 
     pub(crate) fn unbind_vertex_array(&mut self, vertex_array_name: VertexArrayName) {
         if Some(vertex_array_name) == self.bound_vertex_array {
-            unsafe { gl::bind_vertex_array(VertexArrayName::null()); }
+            unsafe { bootstrap_gl::bind_vertex_array(VertexArrayName::null()); }
             self.bound_vertex_array = None;
         }
     }
 
     pub(crate) fn polygon_mode(&mut self, mode: PolygonMode) {
         if mode != self.front_polygon_mode || mode != self.back_polygon_mode {
-            unsafe { gl::polygon_mode(Face::FrontAndBack, mode); }
+            unsafe { bootstrap_gl::polygon_mode(Face::FrontAndBack, mode); }
             self.front_polygon_mode = mode;
             self.back_polygon_mode = mode;
         }
@@ -169,8 +169,8 @@ impl ContextInner {
     pub(crate) fn use_program(&mut self, program: Option<ProgramObject>) {
         if program != self.program {
             match program {
-                Some(program) => unsafe { gl::use_program(program); },
-                None => unsafe { gl::use_program(ProgramObject::null()); },
+                Some(program) => unsafe { bootstrap_gl::use_program(program); },
+                None => unsafe { bootstrap_gl::use_program(ProgramObject::null()); },
             }
 
             self.program = program;
@@ -180,8 +180,8 @@ impl ContextInner {
     pub(crate) fn enable_server_cull(&mut self, enabled: bool) {
         if enabled != self.server_cull_enabled {
             match enabled {
-                true => unsafe { gl::enable(ServerCapability::CullFace); },
-                false => unsafe { gl::disable(ServerCapability::CullFace); },
+                true => unsafe { bootstrap_gl::enable(ServerCapability::CullFace); },
+                false => unsafe { bootstrap_gl::disable(ServerCapability::CullFace); },
             }
             self.server_cull_enabled = enabled;
         }
@@ -190,8 +190,8 @@ impl ContextInner {
     pub(crate) fn enable_server_depth_test(&mut self, enabled: bool) {
         if enabled != self.server_depth_test_enabled {
             match enabled {
-                true => unsafe { gl::enable(ServerCapability::DepthTest); },
-                false => unsafe { gl::disable(ServerCapability::DepthTest); },
+                true => unsafe { bootstrap_gl::enable(ServerCapability::DepthTest); },
+                false => unsafe { bootstrap_gl::disable(ServerCapability::DepthTest); },
             }
             self.server_depth_test_enabled = enabled;
         }
@@ -199,28 +199,28 @@ impl ContextInner {
 
     pub(crate) fn cull_mode(&mut self, face: Face) {
         if self.cull_mode != face {
-            unsafe { gl::cull_face(face); }
+            unsafe { bootstrap_gl::cull_face(face); }
             self.cull_mode = face;
         }
     }
 
     pub(crate) fn winding_order(&mut self, winding_order: WindingOrder) {
         if self.winding_order != winding_order {
-            unsafe { gl::front_face(winding_order); }
+            unsafe { bootstrap_gl::front_face(winding_order); }
             self.winding_order = winding_order;
         }
     }
 
     pub(crate) fn depth_test(&mut self, comparison: Comparison) {
         if comparison != self.depth_test {
-            unsafe { gl::depth_func(comparison); }
+            unsafe { bootstrap_gl::depth_func(comparison); }
             self.depth_test = comparison;
         }
     }
 
     pub(crate) fn blend(&mut self, source_factor: SourceFactor, dest_factor: DestFactor) {
         if (source_factor, dest_factor) != self.blend {
-            unsafe { gl::blend_func(source_factor, dest_factor); }
+            unsafe { bootstrap_gl::blend_func(source_factor, dest_factor); }
             self.blend = (source_factor, dest_factor);
         }
     }
@@ -229,9 +229,9 @@ impl ContextInner {
 impl Drop for Context {
     fn drop(&mut self) {
         unsafe {
-            gl::make_current(self.raw);
-            gl::debug_message_callback(None, ptr::null_mut());
-            gl::destroy_context(self.raw)
+            bootstrap_gl::make_current(self.raw);
+            bootstrap_gl::debug_message_callback(None, ptr::null_mut());
+            bootstrap_gl::destroy_context(self.raw)
         }
     }
 }
@@ -251,11 +251,11 @@ pub enum Error {
 }
 
 #[derive(Debug)]
-pub(crate) struct ContextGuard(gl::Context);
+pub(crate) struct ContextGuard(bootstrap_gl::Context);
 
 impl ContextGuard {
-    pub fn new(context: gl::Context) -> ContextGuard {
-        let old = unsafe { gl::make_current(context) };
+    pub fn new(context: bootstrap_gl::Context) -> ContextGuard {
+        let old = unsafe { bootstrap_gl::make_current(context) };
         ContextGuard(old)
     }
 }
@@ -263,6 +263,6 @@ impl ContextGuard {
 impl Drop for ContextGuard {
     fn drop(&mut self) {
         // TODO: Assert that the context is still current.
-        unsafe { gl::make_current(self.0); }
+        unsafe { bootstrap_gl::make_current(self.0); }
     }
 }

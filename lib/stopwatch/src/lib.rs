@@ -1,18 +1,13 @@
 #![feature(const_fn)]
 
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-
-extern crate bootstrap_rs as bootstrap;
-extern crate fiber;
-
 use fiber::FiberId;
+use once_cell::sync::OnceCell;
+use serde_derive::Serialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 use std::mem;
-use std::sync::Mutex;
+use parking_lot::Mutex;
 use std::time::Duration;
 
 #[cfg(target_os="windows")]
@@ -25,11 +20,19 @@ thread_local! {
 }
 
 
-static mut CONTEXT_MAP: OnceCell<Mutex<HashMap<FiberId, Context>>> = OnceCell::new(Mutex::new(HashMap::with_capacity(1024)));
-static mut EVENTS: OnceCell<Mutex<Vec<Event>>> = OnceCell::new(Mutex::new(Vec::new()));
+static mut CONTEXT_MAP: OnceCell<Mutex<HashMap<FiberId, Context>>> = OnceCell::new();
+static mut EVENTS: OnceCell<Mutex<Vec<Event>>> = OnceCell::new();
+
+unsafe fn init_context_map() {
+    CONTEXT_MAP.set(Mutex::new(HashMap::with_capacity(1024))).unwrap();
+}
+unsafe fn init_events() {
+    EVENTS.set(Mutex::new(Vec::new())).unwrap();
+}
 
 /// Swaps the currently tracked execution context with the specified context.
 pub fn switch_context(old: FiberId, new: FiberId) {
+    unsafe { init_context_map() };
     with_context(|stack| {
         let timestamp = platform::timestamp();
 
@@ -46,7 +49,9 @@ pub fn switch_context(old: FiberId, new: FiberId) {
         }
     });
 
-    let mut context_map = CONTEXT_MAP.lock().expect("Unable to acquire lock on context map");
+    let mut context_map = unsafe {
+        CONTEXT_MAP.get().unwrap().lock()
+    };
 
     let new_context = context_map.remove(&new).unwrap_or(Context::new());
     let old_context = with_context(move |context| {
@@ -76,7 +81,9 @@ pub fn switch_context(old: FiberId, new: FiberId) {
 
 /// Writes the events history to a string.
 pub fn write_events_to_string() -> String {
-    let events = EVENTS.lock().expect("Events mutex got poisoned");
+    let events = unsafe {
+        EVENTS.get().unwrap().lock()
+    };
     serde_json::to_string(&*events).unwrap()
 }
 
@@ -150,7 +157,10 @@ struct Event {
 }
 
 fn push_event(event: Event) {
-    let mut events = EVENTS.lock().expect("Events mutex got poisoned");
+    unsafe { init_events() };
+    let mut events = unsafe {
+        EVENTS.get().unwrap().lock()
+    };
     events.push(event);
 }
 

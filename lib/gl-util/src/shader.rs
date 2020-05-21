@@ -1,6 +1,6 @@
 use crate::context::Context;
-use gl;
-use gl::*;
+use bootstrap_gl;
+use bootstrap_gl::*;
 use std::ffi::CString;
 use std::mem;
 
@@ -10,7 +10,7 @@ pub struct Shader {
     shader_object: ShaderObject,
     shader_type: ShaderType,
 
-    context: ::gl::Context,
+    context: bootstrap_gl::Context,
 }
 
 impl Shader {
@@ -20,7 +20,7 @@ impl Shader {
         let _context = crate::context::ContextGuard::new(context);
 
         // Create the shader object.
-        let shader_object = unsafe { gl::create_shader(shader_type) };
+        let shader_object = unsafe { bootstrap_gl::create_shader(shader_type) };
         if shader_object.is_null() {
             return Err(ShaderError::CreateShaderError);
         }
@@ -31,8 +31,8 @@ impl Shader {
 
         // Set the shader's source and compile it.
         unsafe {
-            gl::shader_source(shader_object, 1, &source_ptr, &len);
-            gl::compile_shader(shader_object);
+            bootstrap_gl::shader_source(shader_object, 1, &source_ptr, &len);
+            bootstrap_gl::compile_shader(shader_object);
         }
 
         // Handle compilation failure.
@@ -55,7 +55,7 @@ impl Shader {
 impl Drop for Shader {
     fn drop(&mut self) {
         let _context = crate::context::ContextGuard::new(self.context);
-        unsafe { gl::delete_shader(self.shader_object); }
+        unsafe { bootstrap_gl::delete_shader(self.shader_object); }
     }
 }
 
@@ -75,7 +75,7 @@ pub enum ShaderError {
 fn compile_status(shader_object: ShaderObject) -> ShaderCompileStatus {
     let mut result = 0;
     unsafe {
-        gl::get_shader_param(shader_object, ShaderParam::CompileStatus, &mut result);
+        bootstrap_gl::get_shader_param(shader_object, ShaderParam::CompileStatus, &mut result);
         mem::transmute(result)
     }
 }
@@ -84,7 +84,7 @@ fn shader_log(shader_object: ShaderObject) -> String {
     // Get the length of the info log.
     let mut info_log_length = 0;
     unsafe {
-        gl::get_shader_param(
+        bootstrap_gl::get_shader_param(
             shader_object,
             ShaderParam::InfoLogLength,
             &mut info_log_length);
@@ -97,7 +97,7 @@ fn shader_log(shader_object: ShaderObject) -> String {
         let mut length_out = 0;
         unsafe {
             log.set_len(info_log_length as usize - 1);
-            gl::get_shader_info_log(
+            bootstrap_gl::get_shader_info_log(
                 shader_object,
                 info_log_length,
                 &mut length_out,
@@ -130,7 +130,7 @@ enum ShaderCompileStatus {
 pub struct Program {
     program_object: ProgramObject,
 
-    pub(crate) context: ::gl::Context,
+    pub(crate) context: bootstrap_gl::Context,
 }
 
 impl Program {
@@ -142,7 +142,7 @@ impl Program {
 
         // Create shader program.
         let program = Program {
-            program_object: unsafe { gl::create_program() },
+            program_object: unsafe { bootstrap_gl::create_program() },
 
             context: context,
         };
@@ -152,15 +152,15 @@ impl Program {
 
         // Attach each of the shaders to the program.
         for shader in shaders {
-            unsafe { gl::attach_shader(program.inner(), shader.shader_object); }
+            unsafe { bootstrap_gl::attach_shader(program.inner(), shader.shader_object); }
         }
 
         // Link the program and detach the shaders.
-        unsafe { gl::link_program(program.inner()); }
+        unsafe { bootstrap_gl::link_program(program.inner()); }
 
         // Detach the shaders.
         for shader in shaders {
-            unsafe { gl::detach_shader(program.inner(), shader.shader_object); }
+            unsafe { bootstrap_gl::detach_shader(program.inner(), shader.shader_object); }
         }
 
         // Check for errors.
@@ -181,7 +181,7 @@ impl Program {
         let mut null_terminated = String::from(name);
         null_terminated.push('\0');
 
-        let raw_location = unsafe { gl::get_attrib_location(self.inner(), null_terminated.as_ptr()) };
+        let raw_location = unsafe { bootstrap_gl::get_attrib_location(self.inner(), null_terminated.as_ptr()) };
 
         // Check for errors.
         if raw_location == -1 {
@@ -198,7 +198,7 @@ impl Program {
         null_terminated.push('\0');
 
         let raw_location = unsafe {
-            gl::get_uniform_location(self.inner(), null_terminated.as_ptr())
+            bootstrap_gl::get_uniform_location(self.inner(), null_terminated.as_ptr())
         };
 
         // Check for errors.
@@ -217,7 +217,7 @@ impl Program {
 impl Drop for Program {
     fn drop(&mut self) {
         let _guard = crate::context::ContextGuard::new(self.context);
-        unsafe { gl::delete_program(self.inner()); }
+        unsafe { bootstrap_gl::delete_program(self.inner()); }
     }
 }
 
@@ -247,7 +247,7 @@ pub enum ProgramError {
 fn link_status(program_object: ProgramObject) -> ProgramLinkStatus {
     let mut result = 0;
     unsafe {
-        gl::get_program_param(program_object, ProgramParam::LinkStatus, &mut result);
+        bootstrap_gl::get_program_param(program_object, ProgramParam::LinkStatus, &mut result);
         mem::transmute(result)
     }
 }
@@ -256,7 +256,7 @@ fn program_log(program_object: ProgramObject) -> String {
     // Get the length of the info log.
     let mut info_log_length = 0;
     unsafe {
-        gl::get_program_param(
+        bootstrap_gl::get_program_param(
             program_object,
             ProgramParam::InfoLogLength,
             &mut info_log_length);
@@ -269,7 +269,7 @@ fn program_log(program_object: ProgramObject) -> String {
         let mut length_out = 0;
         unsafe {
             log.set_len(info_log_length as usize - 1);
-            gl::get_program_info_log(
+            bootstrap_gl::get_program_info_log(
                 program_object,
                 info_log_length,
                 &mut length_out,

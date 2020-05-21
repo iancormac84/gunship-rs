@@ -6,14 +6,10 @@
 //! the main difference being that it is much more poorly constructed and is being developed by
 //! someone much less OpenGL experience.
 
-#![feature(associated_consts)]
-#![feature(pub_restricted)]
-
-extern crate bootstrap_rs as bootstrap;
-extern crate bootstrap_gl as gl;
+use bootstrap_gl;
 
 use context::{Context, ContextInner};
-use gl::*;
+use bootstrap_gl::*;
 use shader::Program;
 use std::mem;
 use std::cell::RefCell;
@@ -21,7 +17,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use texture::Texture2d;
 
-pub use gl::{
+pub use bootstrap_gl::{
     AttributeLocation,
     Comparison,
     DestFactor,
@@ -95,15 +91,15 @@ impl VertexArray {
             let _guard = crate::context::ContextGuard::new(context.raw());
 
             // Create the VAO and VBO.
-            let vertex_array = gl::gen_vertex_array().expect("Failed to create vertex array object");
-            let buffer_name = gl::gen_buffer().expect("Failed to create buffer object");
+            let vertex_array = bootstrap_gl::gen_vertex_array().expect("Failed to create vertex array object");
+            let buffer_name = bootstrap_gl::gen_buffer().expect("Failed to create buffer object");
 
             // Bind the VAO to the context, then bind the buffer to the VAO.
             context.bind_vertex_array(vertex_array);
-            gl::bind_buffer(BufferTarget::Array, buffer_name);
+            bootstrap_gl::bind_buffer(BufferTarget::Array, buffer_name);
 
             // Fill the VBO with data.
-            gl::buffer_data(
+            bootstrap_gl::buffer_data(
                 BufferTarget::Array,
                 vertex_data,
                 BufferUsage::StaticDraw,
@@ -132,9 +128,9 @@ impl VertexArray {
             let context = vertex_array.context.borrow_mut();
             let _guard = crate::context::ContextGuard::new(context.raw());
 
-            let buffer_name = gl::gen_buffer().expect("Failed to generate buffer object");
-            gl::bind_buffer(BufferTarget::ElementArray, buffer_name);
-            gl::buffer_data(
+            let buffer_name = bootstrap_gl::gen_buffer().expect("Failed to generate buffer object");
+            bootstrap_gl::bind_buffer(BufferTarget::ElementArray, buffer_name);
+            bootstrap_gl::buffer_data(
                 BufferTarget::ElementArray,
                 index_data,
                 BufferUsage::StaticDraw,
@@ -173,8 +169,8 @@ impl VertexArray {
             let _guard = crate::context::ContextGuard::new(context.raw());
             context.bind_vertex_array(self.vertex_array_name);
 
-            gl::enable_vertex_attrib_array(attrib_location);
-            gl::vertex_attrib_pointer(
+            bootstrap_gl::enable_vertex_attrib_array(attrib_location);
+            bootstrap_gl::vertex_attrib_pointer(
                 attrib_location,
                 layout.elements as i32,
                 GlType::Float,
@@ -192,8 +188,8 @@ impl Drop for VertexArray {
         let _guard = crate::context::ContextGuard::new(context.raw());
         let buffers = &mut [self.vertex_buffer_name, self.index_buffer.clone().map_or(BufferName::null(), |buf| buf.name)];
         unsafe {
-            gl::delete_vertex_arrays(1, &mut self.vertex_array_name);
-            gl::delete_buffers(2, buffers.as_ptr());
+            bootstrap_gl::delete_vertex_arrays(1, &mut self.vertex_array_name);
+            bootstrap_gl::delete_buffers(2, buffers.as_ptr());
         }
         context.unbind_vertex_array(self.vertex_array_name);
     }
@@ -355,7 +351,7 @@ impl<'a> DrawBuilder<'a> {
             context.bind_vertex_array(self.vertex_array.vertex_array_name);
 
             if let Some(indices) = self.vertex_array.index_buffer.as_ref() {
-                gl::draw_elements(
+                bootstrap_gl::draw_elements(
                     self.draw_mode,
                     indices.primitive_len as i32,
                     IndexType::UnsignedInt,
@@ -363,7 +359,7 @@ impl<'a> DrawBuilder<'a> {
                 );
             } else {
                 let vertex_len = self.vertex_array.vertex_primitive_len / self.vertex_array.elements_per_vertex;
-                gl::draw_arrays(
+                bootstrap_gl::draw_arrays(
                     self.draw_mode,
                     0,
                     vertex_len as i32,
@@ -375,45 +371,45 @@ impl<'a> DrawBuilder<'a> {
     fn apply(&self, uniform: &UniformValue, location: UniformLocation, active_texture: &mut i32) {
         match *uniform {
             UniformValue::F32(value) => unsafe {
-                gl::uniform_f32x1(location, value);
+                bootstrap_gl::uniform_f32x1(location, value);
             },
             UniformValue::F32x2((x, y)) => unsafe {
-                gl::uniform_f32x2(location, x, y);
+                bootstrap_gl::uniform_f32x2(location, x, y);
             },
             UniformValue::F32x3((x, y, z)) => unsafe {
-                gl::uniform_f32x3(location, x, y, z);
+                bootstrap_gl::uniform_f32x3(location, x, y, z);
             },
             UniformValue::F32x4((x, y, z, w)) => unsafe {
-                gl::uniform_f32x4(location, x, y, z, w);
+                bootstrap_gl::uniform_f32x4(location, x, y, z, w);
             },
             UniformValue::F32x1v(value) => unsafe {
-                gl::uniform_f32x1v(location, value.len() as i32, value.as_ptr());
+                bootstrap_gl::uniform_f32x1v(location, value.len() as i32, value.as_ptr());
             },
             UniformValue::F32x3v(value) => unsafe {
-                gl::uniform_f32x3v(location, value.len() as i32, value.as_ptr() as *const _);
+                bootstrap_gl::uniform_f32x3v(location, value.len() as i32, value.as_ptr() as *const _);
             },
             UniformValue::F32x4v(value) => unsafe {
-                gl::uniform_f32x4v(location, value.len() as i32, value.as_ptr() as *const _);
+                bootstrap_gl::uniform_f32x4v(location, value.len() as i32, value.as_ptr() as *const _);
             },
             UniformValue::I32(value) => unsafe {
-                gl::uniform_i32x1(location, value);
+                bootstrap_gl::uniform_i32x1(location, value);
             },
             UniformValue::I32x1v(value) => unsafe {
-                gl::uniform_i32x1v(location, value.len() as i32, value.as_ptr());
+                bootstrap_gl::uniform_i32x1v(location, value.len() as i32, value.as_ptr());
             },
             UniformValue::U32(value) => unsafe {
-                gl::uniform_u32x1(location, value);
+                bootstrap_gl::uniform_u32x1(location, value);
             },
             UniformValue::Matrix(ref matrix) => match matrix.data.len() {
                 16 => unsafe {
-                    gl::uniform_matrix_f32x4v(
+                    bootstrap_gl::uniform_matrix_f32x4v(
                         location,
                         1,
                         matrix.transpose.into(),
                         matrix.data.as_ptr())
                 },
                 9 => unsafe {
-                    gl::uniform_matrix_f32x3v(
+                    bootstrap_gl::uniform_matrix_f32x3v(
                         location,
                         1,
                         matrix.transpose.into(),
@@ -424,8 +420,8 @@ impl<'a> DrawBuilder<'a> {
             UniformValue::Texture(texture) => {
                 unsafe {
                     texture::set_active_texture(*active_texture as u32);
-                    gl::bind_texture(TextureBindTarget::Texture2d, texture.inner());
-                    gl::uniform_i32x1(location, *active_texture);
+                    bootstrap_gl::bind_texture(TextureBindTarget::Texture2d, texture.inner());
+                    bootstrap_gl::uniform_i32x1(location, *active_texture);
                 }
 
                 *active_texture += 1;

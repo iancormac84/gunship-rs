@@ -176,7 +176,7 @@ pub struct RgbQuad {
 
 // TODO: Don't use #[repr(packed)] to load from the buffer, read members in a portable way.
 #[repr(C, packed)]
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 struct FileHeader {
     /// The file type, must be BM (whatever that means).
     pub file_type: u16,
@@ -196,7 +196,7 @@ struct FileHeader {
 }
 
 #[repr(C, packed)]
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 struct InfoHeader {
     /// The number of bytes required by the structure (???).
     pub size: u32,

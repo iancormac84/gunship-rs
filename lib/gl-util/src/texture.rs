@@ -1,7 +1,7 @@
 use crate::context::Context;
-use gl;
+use bootstrap_gl;
 
-pub use gl::{
+pub use bootstrap_gl::{
     TextureObject, TextureFilterFunction, TextureFormat, TextureBindTarget, Texture2dTarget,
     TextureInternalFormat, TextureDataType, TextureParameterName, TextureParameterTarget};
 
@@ -9,7 +9,7 @@ pub use gl::{
 pub struct Texture2d {
     texture_object: TextureObject,
 
-    context: ::gl::Context,
+    context: bootstrap_gl::Context,
 }
 
 impl Texture2d {
@@ -39,7 +39,7 @@ impl Texture2d {
             data.len());
 
         let mut texture_object = TextureObject::null();
-        unsafe { gl::gen_textures(1, &mut texture_object); }
+        unsafe { bootstrap_gl::gen_textures(1, &mut texture_object); }
 
         // Check if the texture object was successfully created.
         if texture_object.is_null() {
@@ -47,8 +47,8 @@ impl Texture2d {
         }
 
         unsafe {
-            gl::bind_texture(TextureBindTarget::Texture2d, texture_object);
-            gl::texture_image_2d(
+            bootstrap_gl::bind_texture(TextureBindTarget::Texture2d, texture_object);
+            bootstrap_gl::texture_image_2d(
                 Texture2dTarget::Texture2d,
                 0,
                 internal_format,
@@ -59,15 +59,15 @@ impl Texture2d {
                 T::DATA_TYPE,
                 data.as_ptr() as *const ());
 
-            gl::texture_parameter_i32(
+            bootstrap_gl::texture_parameter_i32(
                 TextureParameterTarget::Texture2d,
                 TextureParameterName::MinFilter,
                 TextureFilterFunction::Nearest.into());
-            gl::texture_parameter_i32(
+            bootstrap_gl::texture_parameter_i32(
                 TextureParameterTarget::Texture2d,
                 TextureParameterName::MagFilter,
                 TextureFilterFunction::Nearest.into());
-            gl::bind_texture(TextureBindTarget::Texture2d, TextureObject::null());
+            bootstrap_gl::bind_texture(TextureBindTarget::Texture2d, TextureObject::null());
         }
 
         Ok(Texture2d {
@@ -94,7 +94,7 @@ impl Texture2d {
 impl Drop for Texture2d {
     fn drop(&mut self) {
         let _guard = crate::context::ContextGuard::new(self.context);
-        unsafe { gl::delete_textures(1, &mut self.inner()); }
+        unsafe { bootstrap_gl::delete_textures(1, &mut self.inner()); }
     }
 }
 
@@ -134,5 +134,5 @@ pub unsafe fn set_active_texture(index: u32) {
     // TODO: Check that texture index is supported.
 
     let texture_id = TEXTURE_ID_BASE + index;
-    gl::active_texture(texture_id);
+    bootstrap_gl::active_texture(texture_id);
 }

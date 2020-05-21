@@ -10,18 +10,10 @@
 // Useful when sending raw pointers between threads, could be replaced.
 #![feature(unique)]
 
-extern crate bootstrap_audio as bs_audio;
-extern crate bootstrap_rs as bootstrap;
-extern crate cell_extras;
-extern crate fiber;
-extern crate hash;
-#[macro_use]
-extern crate lazy_static;
-extern crate parse_obj as obj;
-extern crate polygon;
-
-pub extern crate polygon_math as math;
-pub extern crate stopwatch;
+//extern crate bootstrap_audio as bs_audio;
+use bootstrap_rs as bootstrap;
+use parse_obj as obj;
+use polygon_math as math;
 
 #[macro_use]
 pub mod macros;

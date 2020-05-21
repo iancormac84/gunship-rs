@@ -50,7 +50,7 @@ impl<'a> Lexer<'a> {
             return self.parse_ident(start_index)
         }
 
-        // See if token is a number literal.
+        /*// See if token is a number literal.
         if character.is_numeric_part() {
             return unimplemented!();
         }
@@ -58,7 +58,7 @@ impl<'a> Lexer<'a> {
         // See if character is string literal.
         if character == '"' {
             return unimplemented!();
-        }
+        }*/
 
         // See if token is program literal.
         if character == '{' {
